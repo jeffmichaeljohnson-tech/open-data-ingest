@@ -54,15 +54,19 @@ export function runOne(root, spec, exec) {
   }
   let out = '', code = 0;
   try {
-    // Record the in-flight mutation BEFORE touching disk, so a signal landing
-    // between mutations (the layer-2 handlers below) can restore the original.
-    // Without this the handlers read a binding that was always null and could
-    // restore nothing.
-    inFlight = { file, before, rel: spec.file };
     // A FUNCTION as the replacement, deliberately. Passing a string lets JS
     // interpret $&, $`, $', $$ and $1..$9 inside it as substitution patterns,
     // which silently corrupts any mutation whose replacement contains a dollar
     // sign -- and a mangled mutation yields a verdict about code nobody wrote.
+    // Record what is on disk BEFORE the write, so the signal handlers (layer 2
+    // below) can undo the mutation if the process is interrupted. This was
+    // declared and read but NEVER ASSIGNED: the handler tested `if (inFlight)`
+    // against a value nothing ever set, so layer 2 could not fire and the
+    // comment describing three restoration layers was describing two. Dead
+    // defensive code that reads as a working guarantee is worse than none,
+    // because it stops anyone looking. `test_layer_2_records_the_in_flight_
+    // mutation` now pins it.
+    inFlight = { file, before, rel: spec.file };
     writeFileSync(file, before.replace(spec.find, () => spec.replace));
     const r = exec();
     out = r.out; code = r.code;
