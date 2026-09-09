@@ -10,6 +10,8 @@
     "./worship": "./feeds/worship/worship.ts"
   },
   "tasks": {
-    "test": "deno test --allow-read feeds/*/*.test.ts publish/*.test.ts"
+    "test": "deno test --allow-read feeds/*/*.test.ts publish/*.test.ts",
+    "mutation": "deno run -A scripts/mutation-runner.mjs . mutations.json",
+    "test:mutation-runner": "deno run -A scripts/mutation-runner.test.mjs"
   }
 }

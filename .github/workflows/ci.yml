@@ -13,3 +13,7 @@ jobs:
           deno-version: v2.x
       - name: test
         run: deno task test
+      - name: the mutation runner's own suite
+        run: deno task test:mutation-runner
+      - name: mutation
+        run: deno task mutation

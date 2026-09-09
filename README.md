@@ -66,9 +66,36 @@ deno task test
 93 tests, all passing, in about 165 ms:
 worldbank 13 · usgs 18 · gdacs 22 · unhcr 14 · worship 11 · publish 15.
 
-The suite is **mutation-tested**. Eight mutations were applied — each leg of the
-licence gate disabled in turn, and the two cache policies swapped — and all eight
-are caught.
+## Mutation
+
+A pass count says a suite runs. It does not say the suite would notice if the
+code were wrong. So the mutations are committed rather than described:
+
+```
+deno task mutation
+```
+
+`mutations.json` lists eight changes to real logic. The runner applies each one,
+runs the suite, restores the file and verifies the restore by hash. It reports
+four verdicts, and the third is why it exists:
+
+| verdict | meaning |
+|---|---|
+| `KILLED` | the suite ran and failed — the mutation is caught |
+| `SURVIVED` | the suite ran and passed — nothing pins this behaviour |
+| `INCONCLUSIVE` | non-zero exit, but no evidence any test ran |
+| `NOT-APPLIED` | the pattern was absent, or matched more than once |
+
+A mutation that stops the code compiling also exits non-zero. A runner reading
+only the exit code scores that as a kill it never earned, so a spec declares a
+marker the test runner prints only when tests actually execute, and a non-zero
+exit without it is `INCONCLUSIVE` — never counted as caught.
+
+The runner has its own suite (`deno task test:mutation-runner`), because a tool that measures test suites
+is itself a check, and a check nobody has watched fail is a claim.
+
+The eight are every leg of the licence gate disabled in turn, and the two cache
+policies swapped for each other.
 
 MIT licensed. The *data* each feed describes carries its own licence, which is
 the entire subject of the publish layer.

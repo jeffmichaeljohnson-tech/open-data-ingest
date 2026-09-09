@@ -1,0 +1,22 @@
+{
+  "command": "deno task test",
+  "ran": "\\d+ passed",
+  "mutations": [
+    { "name": "attribution is no longer required", "file": "publish/snapshotPublish.ts",
+      "find": "  if (!desc.attribution || desc.attribution.trim() === '') {", "replace": "  if (false) {" },
+    { "name": "a derivative database need not carry a share-alike licence", "file": "publish/snapshotPublish.ts",
+      "find": "    if (!DATABASE_COPYLEFT_SPDX.has(desc.spdx)) {", "replace": "    if (false) {" },
+    { "name": "the licence URL need not travel with the data", "file": "publish/snapshotPublish.ts",
+      "find": "    if (!desc.licenceUrl) {", "replace": "    if (false) {" },
+    { "name": "the ODbL 4.6 data-availability notice is no longer required", "file": "publish/snapshotPublish.ts",
+      "find": "    if (!desc.dataAvailabilityNotice || desc.dataAvailabilityNotice.trim() === '') {", "replace": "    if (false) {" },
+    { "name": "an aggregate may claim a share-alike licence", "file": "publish/snapshotPublish.ts",
+      "find": "  if (DATABASE_COPYLEFT_SPDX.has(desc.spdx)) {", "replace": "  if (false) {" },
+    { "name": "an aggregate may carry a data-availability notice", "file": "publish/snapshotPublish.ts",
+      "find": "  if (desc.dataAvailabilityNotice) {", "replace": "  if (false) {" },
+    { "name": "immutable artifacts cached for a minute instead of a year", "file": "publish/snapshotPublish.ts",
+      "find": "'Cache-Control': 'public, max-age=31536000, immutable',", "replace": "'Cache-Control': 'public, max-age=60, immutable'," },
+    { "name": "the MUTABLE pointer cached for a year", "file": "publish/snapshotPublish.ts",
+      "find": "'Cache-Control': 'public, max-age=60, must-revalidate',", "replace": "'Cache-Control': 'public, max-age=31536000, must-revalidate'," }
+  ]
+}
