@@ -18,7 +18,7 @@
  * carries the coordinates must carry the ODbL licence, the "© OpenStreetMap
  * contributors" attribution, and the §4.6 data-availability statement.
  *
- * `_atlas-publish/snapshotPublish.ts` already implements that distinction and THROWS
+ * `../../publish/snapshotPublish.ts` already implements that distinction and THROWS
  * on a mislabel — but nothing had ever exercised the derivative_database path. This
  * module is what fires it: it builds the worship snapshot and hands it to the SAME
  * planPublish, so the guard that was only ever proven on a fixture now runs on the
@@ -57,7 +57,7 @@ import type { PublishableSnapshot } from '../../publish/snapshotPublish.ts';
 // ===========================================================================
 
 /**
- * The feed_key whose descriptor in `_atlas-publish`'s LICENCE_REGISTER is the ODbL
+ * The feed_key whose descriptor in the publish layer's LICENCE_REGISTER is the ODbL
  * `derivative_database` row. EVERY worship artifact — index, overview and each detail
  * tile — is planned with THIS descriptor, so the ODbL obligation is attached to every
  * fetchable file, not just the index. The per-tile snapshot's own `feed_key` differs

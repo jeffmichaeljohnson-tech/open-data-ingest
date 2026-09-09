@@ -2,12 +2,13 @@
  * worship.test.ts — offline proof of the OSM worship snapshot builder AND of the
  * derivative_database licence path it exercises for the first time.
  *
- * Run with `deno test --allow-read` from this directory. Every test is fixture-driven
- * — no network, no R2, no disk (the one `--allow-read` test reads a committed tile off
- * the repo to prove the codec on REAL bytes, and is skipped if that asset is absent).
+ * Run with `deno test` from this directory — no permission flags. Every test is
+ * fixture-driven: no network, no R2, no disk. The codec is proven on bytes this file
+ * encodes in-memory, so nothing here reads a file (see section (5) for the history of
+ * the one test that used to, and why it was replaced).
  *
  * The licence tests import the REAL planPublish and LICENCE_REGISTER from
- * `_atlas-publish` (read-only) so the guard is proven on the artifact this builder
+ * `../../publish/snapshotPublish.ts` (read-only) so the guard is proven on the artifact this builder
  * actually produces — not re-asserted against a hand-made block. A guard that has only
  * ever been shown to PASS is not yet a guard, so every accept here is paired with a
  * falsifying reject: strip one ODbL field and the SAME artifact must be refused.
@@ -19,7 +20,7 @@ import {
   assertThrows,
   assertStringIncludes,
   assertAlmostEquals,
-} from 'https://deno.land/std@0.224.0/assert/mod.ts';
+} from '@std/assert';
 import {
   planPublish,
   LICENCE_REGISTER,
@@ -35,9 +36,7 @@ import {
   buildIndexSnapshot,
   tileFeedKey,
   OVERVIEW_FEED_KEY,
-  INDEX_FEED_KEY,
   WORSHIP_LICENCE_KEY,
-  type WorshipTileSnapshot,
   type WorshipIndexEntry,
   type DecodedPoint,
 } from './worship.ts';
@@ -94,6 +93,51 @@ Deno.test('readPwtHeader rejects bad magic and a truncated body — a malformed 
 
   const truncated = good.slice(0, good.length - 1);
   assertThrows(() => readPwtHeader(truncated), Error, 'does not match header count');
+});
+
+Deno.test('readPwtHeader — a buffer too short to even hold the 24-byte header is refused', () => {
+  // A distinct branch from the count-mismatch case above: a buffer under 24 bytes
+  // cannot be read for a count at all, so it is refused before the length maths.
+  // Reading a count out of 10 bytes would be an out-of-bounds DataView read.
+  for (const len of [0, 1, 23]) {
+    assertThrows(() => readPwtHeader(new Uint8Array(len)), Error, 'shorter than the 24-byte header');
+  }
+});
+
+Deno.test('decodePwt — a hostile point count that exceeds the body is refused, not read past the buffer', () => {
+  // A malformed/hostile tile: valid magic, but a count far larger than the bytes
+  // present. Without the length check decodePwt would read uint16s past the end of
+  // the buffer. The header check catches it as a length/count mismatch.
+  const h = new Uint8Array(24);
+  const dv = new DataView(h.buffer);
+  h[0] = 0x50; h[1] = 0x57; h[2] = 0x54; h[3] = 0x31; // 'PWT1'
+  dv.setUint32(4, 1_000_000, true); // claims a million points; body carries none
+  assertThrows(() => readPwtHeader(h), Error, 'does not match header count');
+  assertThrows(() => decodePwt(h), Error, 'does not match header count');
+});
+
+Deno.test('an empty tile (count 0) is a valid 24-byte header that decodes to no points', () => {
+  const empty = encodePwt([], { minLon: 0, minLat: 0, spanLon: 10, spanLat: 10 });
+  assertEquals(empty.length, 24); // header only, no body
+  assertEquals(readPwtHeader(empty).count, 0);
+  assertEquals(decodePwt(empty), []);
+});
+
+Deno.test('decodePwt reads a tile that is a view into a larger buffer at a non-zero offset', () => {
+  // readPwtHeader/decodePwt build their DataView from (buffer, byteOffset, length),
+  // so a tile sitting inside a bigger ArrayBuffer decodes correctly. The leading pad
+  // bytes are zeros — a decoder that ignored byteOffset would read them as the magic
+  // and throw 'bad magic', so this test genuinely pins the offset handling.
+  const tile = encodePwt([{ lon: 3, lat: 4, religion: 2 }], { minLon: 0, minLat: 0, spanLon: 10, spanLat: 10 });
+  const backing = new Uint8Array(tile.length + 7); // 7 leading pad bytes, all zero
+  backing.set(tile, 7);
+  const view = backing.subarray(7);
+  assertEquals(view.byteOffset, 7);
+  const decoded = decodePwt(view);
+  assertEquals(decoded.length, 1);
+  assertAlmostEquals(decoded[0].lon, 3, 1e-2);
+  assertAlmostEquals(decoded[0].lat, 4, 1e-2);
+  assertEquals(decoded[0].religion, 2);
 });
 
 Deno.test('base64 roundtrips arbitrary bytes exactly (incl. high bytes)', () => {
