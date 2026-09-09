@@ -23,7 +23,7 @@
  *    the heavy artifact be immutable-cached while the pointer stays fresh.
  *
  * 2. TWO ARTIFACT CLASSES, TWO LICENCE OBLIGATIONS — NOT ONE BLANKET RULE. Per
- *    docs/DATA-LICENSE-REGISTER.md (the ODbL section, read it):
+ *    the ODbL itself, encoded in LICENCE_REGISTER below:
  *      • A snapshot of the OpenStreetMap worship points is the DATA in re-usable
  *        form — coordinates you can extract — so on the OSMF's own definition it is
  *        a DERIVATIVE DATABASE. ODbL lets us publish it, but the file MUST carry the
@@ -246,7 +246,8 @@ export function buildLicenceBlock(desc: LicenceDescriptor): LicenceBlock {
 
 // ===========================================================================
 // THE LICENCE REGISTER — one descriptor per feed we publish.
-// Sourced verbatim from docs/DATA-LICENSE-REGISTER.md. Adding a feed here is a
+// This table IS the register for everything this package publishes: there is no
+// second document to fall out of step with it. Adding a feed here is a
 // deliberate, reviewable act, so a new source cannot be published unlabelled.
 // ===========================================================================
 
@@ -329,7 +330,6 @@ const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
  * Headers for an IMMUTABLE, content-hashed artifact. A year, marked immutable, so
  * browsers never even revalidate within the year — safe precisely because the key
  * is content-addressed: new data is a new key, never a mutation of this one.
- * (Matches docs/WAVE0-INFRA.md §4.)
  */
 export function immutableObjectHeaders(): Record<string, string> {
   return {

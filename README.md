@@ -119,12 +119,9 @@ deno task test
 108 tests, all passing, in about 200 ms. The suite declares **no Deno permissions at all** — not even `--allow-read` — which is what makes the "no I/O" claim above checkable rather
 than asserted. `deno lint`, `deno check` and `deno fmt --check` are all clean.
 
-`fmt` is configured rather than declined. The default width rewraps long template
-literals mid-expression, which mangles precisely the error messages that explain a
-refusal — the most useful prose in the codebase. Measured across widths: the split
-stops at 180 and the resulting diff is net *shorter* than what it replaced. So
-`deno.json` declares `singleQuote` and `lineWidth: 180`, and a tool enforces the
-house style instead of a paragraph here asking you to take it on trust.
+`fmt` is configured rather than declined. The default width rewraps long template literals mid-expression, which mangles precisely the error messages that explain a refusal — the
+most useful prose in the codebase. Measured across widths: the split stops at 180 and the resulting diff is net _shorter_ than what it replaced. So `deno.json` declares
+`singleQuote` and `lineWidth: 180`, and a tool enforces the house style instead of a paragraph here asking you to take it on trust.
 
 ## Mutation
 

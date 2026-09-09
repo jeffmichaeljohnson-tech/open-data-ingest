@@ -451,7 +451,8 @@ export async function sha256Hex(text: string): Promise<string> {
     .join('');
 }
 
-/** The GDACS attribution line the licence requires (see docs/DATA-LICENSE-REGISTER.md §6). */
+/** The attribution line CC BY 4.0 requires for GDACS. Its exact wording is a
+ *  licence condition, which is why it is generated rather than hand-typed. */
 export function gdacsAttribution(year: number): string {
   return `Source: GDACS (Global Disaster Alert and Coordination System), © European Union, ${year}, licensed under CC BY 4.0.`;
 }

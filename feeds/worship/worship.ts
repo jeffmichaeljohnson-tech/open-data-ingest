@@ -11,7 +11,7 @@
  * WHY THIS FEED EXISTS SEPARATELY FROM atlas-ingest-worldbank
  * ────────────────────────────────────────────────────────────────────────────
  * World Bank is `aggregate_statistics` — a picture of numbers. The worship points
- * are the OTHER class the register (docs/DATA-LICENSE-REGISTER.md, the ODbL section)
+ * are the OTHER class that `LICENCE_REGISTER` in publish/snapshotPublish.ts
  * draws: a snapshot of the OSM worship points is the DATA in re-usable form —
  * coordinates you can extract — so on the OSMF's own definition it is a DERIVATIVE
  * DATABASE, and ODbL makes the labelling a CONDITION, not a courtesy: every file that

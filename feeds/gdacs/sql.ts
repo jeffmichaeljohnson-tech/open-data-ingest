@@ -105,8 +105,8 @@ export function buildEventInsert(events: GdacsEvent[], overrides?: EventInsertOv
 /**
  * The GDACS licence row. atlas.event.licence_key is an FK into atlas.source_licence,
  * which ships empty, so this must be seeded before any event insert. Idempotent.
- * Terms per docs/DATA-LICENSE-REGISTER.md §6: CC BY 4.0 via the EC reuse policy,
- * attribution required, no share-alike, no registration.
+ * Terms: CC BY 4.0 via the European Commission reuse policy — attribution
+ * required, no share-alike, no registration.
  */
 export function buildLicenceSeed(): string {
   return (
