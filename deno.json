@@ -1,6 +1,8 @@
 {
   "name": "open-data-ingest",
   "version": "0.1.0",
+  "description": "Pure, permissionless transform cores for five public-data feeds (World Bank, USGS, GDACS, UNHCR, OpenStreetMap worship points) and a publish layer that refuses to let a snapshot misstate its own licence. No I/O: the suite runs with no network, no fixtures on disk, and no Deno permissions.",
+  "license": "MIT",
   "exports": {
     "./publish": "./publish/snapshotPublish.ts",
     "./worldbank": "./feeds/worldbank/worldbank.ts",
@@ -9,9 +11,15 @@
     "./unhcr": "./feeds/unhcr/unhcr.ts",
     "./worship": "./feeds/worship/worship.ts"
   },
+  "imports": {
+    "@std/assert": "https://deno.land/std@0.224.0/assert/mod.ts"
+  },
   "tasks": {
     "test": "deno test feeds/*/*.test.ts publish/*.test.ts",
     "mutation": "deno run -A scripts/mutation-runner.mjs . mutations.json",
     "test:mutation-runner": "deno run -A scripts/mutation-runner.test.mjs"
+  },
+  "lint": {
+    "exclude": ["scripts/"]
   }
 }

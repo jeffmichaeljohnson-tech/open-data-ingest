@@ -11,6 +11,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: lint
+        run: deno lint
+      - name: type-check
+        run: deno check feeds/*/*.ts feeds/*/*.test.ts publish/*.ts publish/*.test.ts
       - name: test
         run: deno task test
       - name: the mutation runner's own suite

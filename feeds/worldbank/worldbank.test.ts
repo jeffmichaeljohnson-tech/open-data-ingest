@@ -15,7 +15,7 @@ import {
   assertEquals,
   assertThrows,
   assertStringIncludes,
-} from 'https://deno.land/std@0.224.0/assert/mod.ts';
+} from '@std/assert';
 import {
   parseWorldBankResponse,
   buildCrosswalkIndex,
@@ -25,7 +25,6 @@ import {
   POPULATION_TOTAL,
   ELECTRICITY_ACCESS_PCT,
   type WorldBankRow,
-  type CrosswalkEntry,
 } from './worldbank.ts';
 import { buildObservationInsert } from './sql.ts';
 
