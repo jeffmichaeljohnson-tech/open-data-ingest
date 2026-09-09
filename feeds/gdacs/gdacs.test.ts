@@ -9,26 +9,9 @@
  * fixtures mirror the shape VERIFIED LIVE 2026-08-17 against the GDACS SEARCH
  * endpoint (a FeatureCollection of Point features with EQ/FL/TC/WF/DR/VO types).
  */
-import {
-  assert,
-  assertEquals,
-  assertThrows,
-  assertStringIncludes,
-} from '@std/assert';
-import {
-  parseGdacsResponse,
-  transformGdacsFeatures,
-  buildGdacsSnapshot,
-  coordsFromGeometry,
-  normalizeGdacsTimestamp,
-  type GdacsFeature,
-} from './gdacs.ts';
-import {
-  buildEventInsert,
-  buildLicenceSeed,
-  buildFeedSeed,
-  buildHeartbeatUpsert,
-} from './sql.ts';
+import { assert, assertEquals, assertStringIncludes, assertThrows } from '@std/assert';
+import { buildGdacsSnapshot, coordsFromGeometry, type GdacsFeature, normalizeGdacsTimestamp, parseGdacsResponse, transformGdacsFeatures } from './gdacs.ts';
+import { buildEventInsert, buildFeedSeed, buildHeartbeatUpsert, buildLicenceSeed } from './sql.ts';
 
 // A GDACS feature shaped exactly like the live response (fields trimmed to what we read).
 function feature(

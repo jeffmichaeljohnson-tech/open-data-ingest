@@ -124,7 +124,10 @@ export function encodePwt(points: DecodedPoint[], h: Omit<PwtHeader, 'count'>): 
   const n = points.length;
   const bytes = new Uint8Array(PWT_HEADER_BYTES + n * PWT_POINT_BYTES);
   const dv = new DataView(bytes.buffer);
-  bytes[0] = 0x50; bytes[1] = 0x57; bytes[2] = 0x54; bytes[3] = 0x31;
+  bytes[0] = 0x50;
+  bytes[1] = 0x57;
+  bytes[2] = 0x54;
+  bytes[3] = 0x31;
   dv.setUint32(4, n, true);
   dv.setFloat32(8, h.minLon, true);
   dv.setFloat32(12, h.minLat, true);

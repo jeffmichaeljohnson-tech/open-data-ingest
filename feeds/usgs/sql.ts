@@ -82,9 +82,7 @@ function rowValues(r: EventRecord): string {
  */
 export function buildEventInsert(records: EventRecord[], overrides?: { idSuffix?: string }): string {
   if (records.length === 0) return '-- (no event records to insert)\n';
-  const effective = overrides?.idSuffix
-    ? records.map((r) => ({ ...r, external_id: r.external_id + overrides.idSuffix }))
-    : records;
+  const effective = overrides?.idSuffix ? records.map((r) => ({ ...r, external_id: r.external_id + overrides.idSuffix })) : records;
   const values = effective.map(rowValues).join(',\n  ');
   return (
     `insert into atlas.event (${EVENT_COLS.join(', ')})\nvalues\n  ` +
@@ -101,13 +99,13 @@ export function buildEventInsert(records: EventRecord[], overrides?: { idSuffix?
  */
 export function buildLicenceSeed(): string {
   return (
-    "insert into atlas.source_licence " +
-    "(licence_key, label, spdx, url, attribution_required, attribution_text, share_alike, non_commercial, verified, verified_at, notes)\n" +
+    'insert into atlas.source_licence ' +
+    '(licence_key, label, spdx, url, attribution_required, attribution_text, share_alike, non_commercial, verified, verified_at, notes)\n' +
     "values ('usgs_pd', 'U.S. Government Public Domain (USGS)', null, " +
     "'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits', " +
     "false, 'U.S. Geological Survey', false, false, true, '2026-08-17', " +
     "'USGS earthquake data are U.S. Government works in the U.S. Public Domain. Courtesy credit to USGS is requested but not legally required. Verified live 2026-08-17 (HTTP 200).')\n" +
-    "on conflict (licence_key) do nothing;\n"
+    'on conflict (licence_key) do nothing;\n'
   );
 }
 
@@ -119,13 +117,13 @@ export function buildLicenceSeed(): string {
  */
 export function buildFeedSeed(): string {
   return (
-    "insert into atlas.feed " +
-    "(feed_key, display_name, clock, source_url, licence_key, cadence_hours, max_staleness_hours, change_detection, requires_browser_ua, requires_token, active, notes)\n" +
+    'insert into atlas.feed ' +
+    '(feed_key, display_name, clock, source_url, licence_key, cadence_hours, max_staleness_hours, change_detection, requires_browser_ua, requires_token, active, notes)\n' +
     "values ('usgs_quakes', 'USGS Earthquakes (M4.5+, past day)', 'event', " +
     "'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson', " +
     "'usgs_pd', 1, 3, 'row_high_water', true, false, true, " +
     "'metadata.generated is the row_high_water change token. M4.5+ past-day window: globally-felt quakes, self-healing 24h window. Attribution is server-side PIP via the atlas.event trigger; the feed supplies only geom.')\n" +
-    "on conflict (feed_key) do nothing;\n"
+    'on conflict (feed_key) do nothing;\n'
   );
 }
 
@@ -143,17 +141,17 @@ export function buildHeartbeatUpsert(opts: {
   now: string;
 }): string {
   return (
-    "insert into atlas.feed_heartbeat " +
-    "(feed_key, last_success_at, last_change_at, last_release_token, last_row_count, last_status, last_error, updated_at)\n" +
+    'insert into atlas.feed_heartbeat ' +
+    '(feed_key, last_success_at, last_change_at, last_release_token, last_row_count, last_status, last_error, updated_at)\n' +
     `values (${lit(opts.feedKey)}, ${lit(opts.now)}::timestamptz, ${lit(opts.now)}::timestamptz, ` +
     `${lit(opts.releaseToken)}, ${lit(opts.rowCount)}, 'ok', null, ${lit(opts.now)}::timestamptz)\n` +
-    "on conflict (feed_key) do update set\n" +
-    "  last_success_at = excluded.last_success_at,\n" +
-    "  last_change_at = excluded.last_change_at,\n" +
-    "  last_release_token = excluded.last_release_token,\n" +
-    "  last_row_count = excluded.last_row_count,\n" +
-    "  last_status = excluded.last_status,\n" +
-    "  last_error = null,\n" +
-    "  updated_at = excluded.updated_at;\n"
+    'on conflict (feed_key) do update set\n' +
+    '  last_success_at = excluded.last_success_at,\n' +
+    '  last_change_at = excluded.last_change_at,\n' +
+    '  last_release_token = excluded.last_release_token,\n' +
+    '  last_row_count = excluded.last_row_count,\n' +
+    '  last_status = excluded.last_status,\n' +
+    '  last_error = null,\n' +
+    '  updated_at = excluded.updated_at;\n'
   );
 }

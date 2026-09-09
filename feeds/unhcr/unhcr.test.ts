@@ -8,20 +8,8 @@
  * one live-data dependency (does the endpoint exist, is coo_iso really iso_a3?) is
  * verified against the real API in the report, not mocked here.
  */
-import {
-  assert,
-  assertEquals,
-  assertThrows,
-  assertStringIncludes,
-} from '@std/assert';
-import {
-  parseUnhcrResponse,
-  buildCrosswalkIndex,
-  transformUnhcrRows,
-  computeReleaseToken,
-  buildSnapshot,
-  type UnhcrPopulationRow,
-} from './unhcr.ts';
+import { assert, assertEquals, assertStringIncludes, assertThrows } from '@std/assert';
+import { buildCrosswalkIndex, buildSnapshot, computeReleaseToken, parseUnhcrResponse, transformUnhcrRows, type UnhcrPopulationRow } from './unhcr.ts';
 import { buildObservationInsert } from './sql.ts';
 
 // A tiny crosswalk: real countries keyed by iso_a3 (UNHCR joins on iso_a3 directly).

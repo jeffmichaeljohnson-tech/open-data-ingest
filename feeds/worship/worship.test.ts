@@ -13,32 +13,21 @@
  * ever been shown to PASS is not yet a guard, so every accept here is paired with a
  * falsifying reject: strip one ODbL field and the SAME artifact must be refused.
  */
+import { assert, assertAlmostEquals, assertEquals, assertNotEquals, assertStringIncludes, assertThrows } from '@std/assert';
+import { LICENCE_REGISTER, type LicenceDescriptor, planPublish } from '../../publish/snapshotPublish.ts';
 import {
-  assert,
-  assertEquals,
-  assertNotEquals,
-  assertThrows,
-  assertStringIncludes,
-  assertAlmostEquals,
-} from '@std/assert';
-import {
-  planPublish,
-  LICENCE_REGISTER,
-  type LicenceDescriptor,
-} from '../../publish/snapshotPublish.ts';
-import {
-  encodePwt,
-  decodePwt,
-  readPwtHeader,
-  bytesToBase64,
   base64ToBytes,
-  buildTileSnapshot,
   buildIndexSnapshot,
-  tileFeedKey,
+  buildTileSnapshot,
+  bytesToBase64,
+  type DecodedPoint,
+  decodePwt,
+  encodePwt,
   OVERVIEW_FEED_KEY,
+  readPwtHeader,
+  tileFeedKey,
   WORSHIP_LICENCE_KEY,
   type WorshipIndexEntry,
-  type DecodedPoint,
 } from './worship.ts';
 
 // --- fixtures ---------------------------------------------------------------
@@ -110,7 +99,10 @@ Deno.test('decodePwt — a hostile point count that exceeds the body is refused,
   // the buffer. The header check catches it as a length/count mismatch.
   const h = new Uint8Array(24);
   const dv = new DataView(h.buffer);
-  h[0] = 0x50; h[1] = 0x57; h[2] = 0x54; h[3] = 0x31; // 'PWT1'
+  h[0] = 0x50;
+  h[1] = 0x57;
+  h[2] = 0x54;
+  h[3] = 0x31; // 'PWT1'
   dv.setUint32(4, 1_000_000, true); // claims a million points; body carries none
   assertThrows(() => readPwtHeader(h), Error, 'does not match header count');
   assertThrows(() => decodePwt(h), Error, 'does not match header count');
@@ -167,8 +159,7 @@ Deno.test('a worship tile artifact carries ODbL, attribution, licence URL and th
 
 Deno.test('FALSIFY: the SAME tile artifact is REFUSED when any one ODbL field is removed', async () => {
   const snap = await buildTileSnapshot(sampleTileBytes(), tileFeedKey(0, 50), 'detail', META, { lon: 0, lat: 50, tileDeg: 10 });
-  const plan = () => (deficient: LicenceDescriptor) =>
-    planPublish(snap, { clock: 'geometry', licence: deficient, sourceChangedAt: META.releaseVersion });
+  const plan = () => (deficient: LicenceDescriptor) => planPublish(snap, { clock: 'geometry', licence: deficient, sourceChangedAt: META.releaseVersion });
   const attempt = plan();
 
   // missing the licence URL
@@ -227,8 +218,14 @@ Deno.test('a changed point moves the tile to a DIFFERENT immutable key', async (
 });
 
 Deno.test('each detail tile gets its OWN R2 key; negatives are encoded, never a bare minus in the path segment', async () => {
-  const west = await buildTileSnapshot(encodePwt([{ lon: -75, lat: -25, religion: 0 }], { minLon: -80, minLat: -30, spanLon: 10, spanLat: 10 }), tileFeedKey(-80, -30), 'detail', META, { lon: -80, lat: -30, tileDeg: 10 });
-  assertEquals(west.feed_key, 'osm_worship_tile_n80_n30');  // gitleaks:allow -- a tile name derived from coordinates, not a credential
+  const west = await buildTileSnapshot(
+    encodePwt([{ lon: -75, lat: -25, religion: 0 }], { minLon: -80, minLat: -30, spanLon: 10, spanLat: 10 }),
+    tileFeedKey(-80, -30),
+    'detail',
+    META,
+    { lon: -80, lat: -30, tileDeg: 10 },
+  );
+  assertEquals(west.feed_key, 'osm_worship_tile_n80_n30'); // gitleaks:allow -- a tile name derived from coordinates, not a credential
   const key = planPublish(west, { clock: 'geometry', licence: ODBL, sourceChangedAt: META.releaseVersion }).objects.find((o) => o.kind === 'artifact')!.key;
   assertStringIncludes(key, 'atlas/geometry/osm_worship_tile_n80_n30/');
   assert(!key.includes('-'), 'no bare minus should reach the R2 key');

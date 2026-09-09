@@ -13,6 +13,8 @@ jobs:
           deno-version: v2.x
       - name: lint
         run: deno lint
+      - name: format
+        run: deno fmt --check
       - name: type-check
         run: deno check feeds/*/*.ts feeds/*/*.test.ts publish/*.ts publish/*.test.ts
       - name: test

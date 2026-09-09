@@ -310,8 +310,10 @@ export function transformGdacsFeatures(
 
     const eventIdRaw = p.eventid;
     const episodeIdRaw = p.episodeid;
-    if (eventIdRaw === undefined || eventIdRaw === null || eventIdRaw === '' ||
-        episodeIdRaw === undefined || episodeIdRaw === null || episodeIdRaw === '') {
+    if (
+      eventIdRaw === undefined || eventIdRaw === null || eventIdRaw === '' ||
+      episodeIdRaw === undefined || episodeIdRaw === null || episodeIdRaw === ''
+    ) {
       skipped.push({ eventtype: code || 'unknown', eventid: String(eventIdRaw ?? ''), reason: 'missing_ids' });
       continue;
     }
@@ -335,8 +337,7 @@ export function transformGdacsFeatures(
 
     // release_version = the episode's own vintage (datemodified), falling back to the
     // start date, then to the id — always SOMETHING, because a vintage is mandatory.
-    const releaseVersion =
-      normalizeGdacsTimestamp(p.datemodified) ?? occurredAt ?? `${eventId}-${episodeId}`;
+    const releaseVersion = normalizeGdacsTimestamp(p.datemodified) ?? occurredAt ?? `${eventId}-${episodeId}`;
 
     // An unknown GDACS code still describes a real disaster: map to a generic type,
     // never drop it. (This is the graceful path; a broken RESPONSE shape throws in
@@ -345,9 +346,7 @@ export function transformGdacsFeatures(
 
     const coord = coordsFromGeometry(feature.geometry);
 
-    const affectedIso3 = Array.isArray(p.affectedcountries)
-      ? p.affectedcountries.map((c) => String(c?.iso3 ?? '').trim()).filter((s) => s !== '')
-      : [];
+    const affectedIso3 = Array.isArray(p.affectedcountries) ? p.affectedcountries.map((c) => String(c?.iso3 ?? '').trim()).filter((s) => s !== '') : [];
 
     const sev = p.severitydata ?? {};
 

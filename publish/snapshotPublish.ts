@@ -271,8 +271,7 @@ export const LICENCE_REGISTER: Record<string, LicenceDescriptor> = {
     attribution: '© OpenStreetMap contributors',
     attributionUrl: 'https://www.openstreetmap.org/copyright',
     licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
-    dataAvailabilityNotice:
-      'This file is a Derivative Database of OpenStreetMap data, made available under the ' +
+    dataAvailabilityNotice: 'This file is a Derivative Database of OpenStreetMap data, made available under the ' +
       'Open Database License (ODbL) v1.0. You are free to copy, distribute and adapt it under ' +
       'the same licence, and must attribute "© OpenStreetMap contributors".',
   },
@@ -454,12 +453,7 @@ export function planPublish(snapshot: PublishableSnapshot, opts: PlanOptions): P
   // Clock 2 default: the newest release token. World Bank release_versions are the
   // `lastupdated` dates, so the max is the source's last publish. A feed whose token
   // is not a date passes sourceChangedAt explicitly.
-  const sourceChangedAt =
-    opts.sourceChangedAt !== undefined
-      ? opts.sourceChangedAt
-      : snapshot.release_versions.length > 0
-        ? [...snapshot.release_versions].sort().at(-1)!
-        : null;
+  const sourceChangedAt = opts.sourceChangedAt !== undefined ? opts.sourceChangedAt : snapshot.release_versions.length > 0 ? [...snapshot.release_versions].sort().at(-1)! : null;
 
   const pointer: PointerDoc = {
     schema_version: 'atlas.pointer.v1',
@@ -517,9 +511,7 @@ export function formatPlan(plan: PublishPlan, opts: { willUpload: boolean }): st
   lines.push(`total upload size: ${humanBytes(plan.totalBytes)} (${plan.totalBytes} bytes) across ${plan.objects.length} objects`);
   lines.push('');
   lines.push(
-    opts.willUpload
-      ? '*** --upload SET: the objects above WOULD be written to R2. ***'
-      : 'DRY RUN — nothing was uploaded. Re-run with --upload to write these objects.',
+    opts.willUpload ? '*** --upload SET: the objects above WOULD be written to R2. ***' : 'DRY RUN — nothing was uploaded. Re-run with --upload to write these objects.',
   );
   return lines.join('\n');
 }

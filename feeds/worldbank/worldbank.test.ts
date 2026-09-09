@@ -10,20 +10,15 @@
  * token exist?) is verified by the proof harness against the real API, not mocked
  * here.
  */
+import { assert, assertEquals, assertStringIncludes, assertThrows } from '@std/assert';
 import {
-  assert,
-  assertEquals,
-  assertThrows,
-  assertStringIncludes,
-} from '@std/assert';
-import {
-  parseWorldBankResponse,
   buildCrosswalkIndex,
-  transformWorldBankRows,
-  denominatorMapFromRecords,
   buildSnapshot,
-  POPULATION_TOTAL,
+  denominatorMapFromRecords,
   ELECTRICITY_ACCESS_PCT,
+  parseWorldBankResponse,
+  POPULATION_TOTAL,
+  transformWorldBankRows,
   type WorldBankRow,
 } from './worldbank.ts';
 import { buildObservationInsert } from './sql.ts';

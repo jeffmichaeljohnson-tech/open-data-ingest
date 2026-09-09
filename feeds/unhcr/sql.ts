@@ -84,8 +84,7 @@ export function buildObservationInsert(
   const effective = records.map((r) => ({
     ...r,
     release_version: overrides?.releaseVersion ?? r.release_version,
-    source_published_at:
-      overrides?.sourcePublishedAt !== undefined ? overrides.sourcePublishedAt : r.source_published_at,
+    source_published_at: overrides?.sourcePublishedAt !== undefined ? overrides.sourcePublishedAt : r.source_published_at,
   }));
   const values = effective.map(rowValues).join(',\n  ');
   return (

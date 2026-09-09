@@ -20,6 +20,15 @@
     "test:mutation-runner": "deno run -A scripts/mutation-runner.test.mjs"
   },
   "lint": {
-    "exclude": ["scripts/"]
+    "exclude": [
+      "scripts/"
+    ]
+  },
+  "fmt": {
+    "singleQuote": true,
+    "lineWidth": 180,
+    "exclude": [
+      "scripts/"
+    ]
   }
 }

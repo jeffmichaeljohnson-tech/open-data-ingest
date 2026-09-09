@@ -13,20 +13,9 @@
  * (feature id 'us6000tlbz', place 'Kuril Islands', magType 'mb', geometry
  * [151.3834, 46.4341, 90.992]).
  */
-import {
-  assert,
-  assertEquals,
-  assertThrows,
-  assertStringIncludes,
-  assertNotEquals,
-} from '@std/assert';
-import {
-  parseUsgsResponse,
-  transformUsgsFeatures,
-  buildSnapshot,
-  type UsgsFeature,
-} from './usgs.ts';
-import { buildEventInsert, buildLicenceSeed, buildFeedSeed, buildHeartbeatUpsert } from './sql.ts';
+import { assert, assertEquals, assertNotEquals, assertStringIncludes, assertThrows } from '@std/assert';
+import { buildSnapshot, parseUsgsResponse, transformUsgsFeatures, type UsgsFeature } from './usgs.ts';
+import { buildEventInsert, buildFeedSeed, buildHeartbeatUpsert, buildLicenceSeed } from './sql.ts';
 
 const OPTS = {
   feedKey: 'usgs_quakes',

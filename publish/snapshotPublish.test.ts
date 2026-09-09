@@ -11,35 +11,23 @@
  * wall-clock times must land at the SAME immutable key, and a changed value must move
  * it. (We only read that module — we never modify it.)
  */
+import { assert, assertEquals, assertNotEquals, assertStringIncludes, assertThrows } from '@std/assert';
 import {
-  assert,
-  assertEquals,
-  assertNotEquals,
-  assertThrows,
-  assertStringIncludes,
-} from '@std/assert';
-import {
-  planPublish,
-  contentKey,
-  pointerKey,
-  immutableObjectHeaders,
-  pointerHeaders,
   buildLicenceBlock,
-  validateLicence,
+  contentKey,
   formatPlan,
   humanBytes,
+  immutableObjectHeaders,
   LICENCE_REGISTER,
-  type PublishableSnapshot,
   type LicenceDescriptor,
+  planPublish,
   type PointerDoc,
+  pointerHeaders,
+  pointerKey,
+  type PublishableSnapshot,
+  validateLicence,
 } from './snapshotPublish.ts';
-import {
-  buildSnapshot,
-  transformWorldBankRows,
-  buildCrosswalkIndex,
-  POPULATION_TOTAL,
-  type WorldBankRow,
-} from '../feeds/worldbank/worldbank.ts';
+import { buildCrosswalkIndex, buildSnapshot, POPULATION_TOTAL, transformWorldBankRows, type WorldBankRow } from '../feeds/worldbank/worldbank.ts';
 
 // --- fixtures ---------------------------------------------------------------
 
@@ -216,8 +204,7 @@ Deno.test('validateLicence throws if an aggregate is handed a database/share-ali
   );
   // and an aggregate must not pretend to be a database by carrying an availability notice
   assertThrows(
-    () =>
-      validateLicence({ class: 'aggregate_statistics', spdx: 'CC-BY-4.0', attribution: 'The World Bank', dataAvailabilityNotice: 'nope' }),
+    () => validateLicence({ class: 'aggregate_statistics', spdx: 'CC-BY-4.0', attribution: 'The World Bank', dataAvailabilityNotice: 'nope' }),
     Error,
     'must not carry a data-availability notice',
   );
@@ -317,19 +304,14 @@ const aggDesc = (spdx: string): LicenceDescriptor => ({
 });
 
 Deno.test('a database licence is recognised however it is spelled', () => {
-  for (const spdx of ['ODbL-1.0', 'odbl-1.0', 'ODBL-1.0', 'OdbL-1.0', ' ODbL-1.0 ',
-                      'ODbL-1.0+', 'ODC-ODbL-1.0', 'CC-BY-SA-4.0', 'cc-by-sa-3.0',
-                      'CC-BY-SA-4.0-or-later']) {
+  for (const spdx of ['ODbL-1.0', 'odbl-1.0', 'ODBL-1.0', 'OdbL-1.0', ' ODbL-1.0 ', 'ODbL-1.0+', 'ODC-ODbL-1.0', 'CC-BY-SA-4.0', 'cc-by-sa-3.0', 'CC-BY-SA-4.0-or-later']) {
     validateLicence(dbDesc(spdx));
   }
 });
 
 Deno.test('an aggregate may not claim a share-alike licence, however it is spelled', () => {
-  for (const spdx of ['ODbL-1.0', 'odbl-1.0', 'ODBL-1.0', 'ODbL-1.0+', 'ODC-ODbL-1.0',
-                      'CC-BY-SA-4.0', 'cc-by-sa-4.0', 'CC-BY-SA-3.0', ' CC-BY-SA-4.0',
-                      'CC-BY-SA-4.0-or-later']) {
-    assertThrows(() => validateLicence(aggDesc(spdx)), Error, 'must not claim',
-      `an aggregate claiming ${spdx} was accepted`);
+  for (const spdx of ['ODbL-1.0', 'odbl-1.0', 'ODBL-1.0', 'ODbL-1.0+', 'ODC-ODbL-1.0', 'CC-BY-SA-4.0', 'cc-by-sa-4.0', 'CC-BY-SA-3.0', ' CC-BY-SA-4.0', 'CC-BY-SA-4.0-or-later']) {
+    assertThrows(() => validateLicence(aggDesc(spdx)), Error, 'must not claim', `an aggregate claiming ${spdx} was accepted`);
   }
 });
 
@@ -339,11 +321,9 @@ Deno.test('every CC-BY-SA version is share-alike, including the 2.x legacy datas
   // 2.x id was wrong in BOTH directions at once, exactly like the original casing
   // slip: an aggregate could falsely claim CC-BY-SA-2.0, and a genuine CC-BY-SA-2.0
   // database was refused publication. CC-BY-SA is share-alike at every version.
-  for (const spdx of ['CC-BY-SA-2.0', 'CC-BY-SA-2.5', 'cc-by-sa-2.0', ' CC-BY-SA-2.5 ',
-                      'CC-BY-SA-2.0-or-later']) {
+  for (const spdx of ['CC-BY-SA-2.0', 'CC-BY-SA-2.5', 'cc-by-sa-2.0', ' CC-BY-SA-2.5 ', 'CC-BY-SA-2.0-or-later']) {
     // an aggregate must NOT be allowed to claim it
-    assertThrows(() => validateLicence(aggDesc(spdx)), Error, 'must not claim',
-      `an aggregate claiming ${spdx} was accepted`);
+    assertThrows(() => validateLicence(aggDesc(spdx)), Error, 'must not claim', `an aggregate claiming ${spdx} was accepted`);
     // and a real derivative database carrying it must be ACCEPTED, not refused
     validateLicence(dbDesc(spdx));
   }
@@ -362,11 +342,11 @@ Deno.test('normalisation does not over-match — a genuinely permissive licence 
 Deno.test('a licence class outside the union is refused, not treated as an aggregate', () => {
   // These used to fall through to the aggregate branch, silently stripping every
   // database obligation from an artifact that meant to carry them.
-  for (const cls of ['derivative_databases', 'DERIVATIVE_DATABASE', 'derivative_database ',
-                     '', undefined, null, 42]) {
+  for (const cls of ['derivative_databases', 'DERIVATIVE_DATABASE', 'derivative_database ', '', undefined, null, 42]) {
     assertThrows(
       () => validateLicence({ ...dbDesc('ODbL-1.0'), class: cls } as unknown as LicenceDescriptor),
-      Error, 'licence class must be',
+      Error,
+      'licence class must be',
       `class ${JSON.stringify(cls)} was accepted`,
     );
   }
@@ -375,10 +355,8 @@ Deno.test('a licence class outside the union is refused, not treated as an aggre
 Deno.test('an attribution nobody can see is not an attribution', () => {
   // String.trim() strips Zs and the BOM but NOT format characters, so each of
   // these satisfied a check whose whole subject is that attribution is required.
-  for (const attribution of ['​', '⁠', '‌', '­', '᠎',
-                             '  ​  ', '', '   ']) {
-    assertThrows(() => validateLicence({ ...aggDesc('CC-BY-4.0'), attribution }),
-      Error, 'has no attribution', `attribution ${JSON.stringify(attribution)} was accepted`);
+  for (const attribution of ['​', '⁠', '‌', '­', '᠎', '  ​  ', '', '   ']) {
+    assertThrows(() => validateLicence({ ...aggDesc('CC-BY-4.0'), attribution }), Error, 'has no attribution', `attribution ${JSON.stringify(attribution)} was accepted`);
   }
   // The control: a real attribution still passes, so this is not a blanket refusal.
   validateLicence({ ...aggDesc('CC-BY-4.0'), attribution: 'The World Bank' });
@@ -391,8 +369,6 @@ Deno.test('an empty SPDX id is refused on both classes', () => {
 
 Deno.test('a whitespace-only licence URL does not satisfy ODbL', () => {
   // '' was refused and '   ' was not: a bare falsy check beside a trimmed one.
-  assertThrows(() => validateLicence({ ...dbDesc('ODbL-1.0'), licenceUrl: '   ' }),
-    Error, 'licence URL');
-  assertThrows(() => validateLicence({ ...dbDesc('ODbL-1.0'), licenceUrl: '' }),
-    Error, 'licence URL');
+  assertThrows(() => validateLicence({ ...dbDesc('ODbL-1.0'), licenceUrl: '   ' }), Error, 'licence URL');
+  assertThrows(() => validateLicence({ ...dbDesc('ODbL-1.0'), licenceUrl: '' }), Error, 'licence URL');
 });

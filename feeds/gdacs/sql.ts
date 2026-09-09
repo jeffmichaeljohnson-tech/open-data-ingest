@@ -110,14 +110,14 @@ export function buildEventInsert(events: GdacsEvent[], overrides?: EventInsertOv
  */
 export function buildLicenceSeed(): string {
   return (
-    "insert into atlas.source_licence " +
-    "(licence_key, label, spdx, url, attribution_required, attribution_text, share_alike, non_commercial, verified, verified_at, notes)\n" +
+    'insert into atlas.source_licence ' +
+    '(licence_key, label, spdx, url, attribution_required, attribution_text, share_alike, non_commercial, verified, verified_at, notes)\n' +
     "values ('gdacs_cc_by_4', 'CC BY 4.0 (via EC reuse policy)', 'CC-BY-4.0', " +
     "'https://commission.europa.eu/legal-notice_en', true, " +
     "'Source: GDACS (Global Disaster Alert and Coordination System), © European Union, licensed under CC BY 4.0.', " +
     "false, false, true, '2026-08-17', " +
     "'CC BY 4.0 inherited from Commission Decision 2011/833/EU; GDACS'' own terms page carries only as-is/liability text and does not restate the licence. Attribution mandatory on every republished R2 file.')\n" +
-    "on conflict (licence_key) do nothing;\n"
+    'on conflict (licence_key) do nothing;\n'
   );
 }
 
@@ -128,14 +128,14 @@ export function buildLicenceSeed(): string {
  */
 export function buildFeedSeed(): string {
   return (
-    "insert into atlas.feed " +
-    "(feed_key, display_name, clock, source_url, licence_key, cadence_hours, max_staleness_hours, " +
-    "change_detection, requires_browser_ua, requires_token, active, notes)\n" +
+    'insert into atlas.feed ' +
+    '(feed_key, display_name, clock, source_url, licence_key, cadence_hours, max_staleness_hours, ' +
+    'change_detection, requires_browser_ua, requires_token, active, notes)\n' +
     "values ('gdacs_events', 'GDACS global disaster alerts', 'event', " +
     "'https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH', 'gdacs_cc_by_4', 3, 12, " +
     "'content_hash', true, false, true, " +
     "'GeoJSON FeatureCollection verified live 2026-08-17. Earthquakes excluded by default (usgs_quakes covers them). Attribution from geometry only, never GDACS'' country field.')\n" +
-    "on conflict (feed_key) do nothing;\n"
+    'on conflict (feed_key) do nothing;\n'
   );
 }
 
@@ -150,21 +150,21 @@ export function buildFeedSeed(): string {
 export function buildHeartbeatUpsert(contentHash: string, rowCount: number): string {
   const hashLit = lit(contentHash);
   return (
-    "insert into atlas.feed_heartbeat " +
-    "(feed_key, last_success_at, last_change_at, last_release_token, last_row_count, last_status, updated_at)\n" +
+    'insert into atlas.feed_heartbeat ' +
+    '(feed_key, last_success_at, last_change_at, last_release_token, last_row_count, last_status, updated_at)\n' +
     `values ('gdacs_events', now(),\n` +
     `  case when (select last_release_token from atlas.feed_heartbeat where feed_key = 'gdacs_events') is distinct from ${hashLit}\n` +
     `       then now()\n` +
     `       else coalesce((select last_change_at from atlas.feed_heartbeat where feed_key = 'gdacs_events'), now()) end,\n` +
     `  ${hashLit}, ${rowCount}, 'ok', now())\n` +
-    "on conflict (feed_key) do update set\n" +
-    "  last_success_at   = excluded.last_success_at,\n" +
-    "  last_change_at    = case when atlas.feed_heartbeat.last_release_token is distinct from excluded.last_release_token\n" +
-    "                           then now() else atlas.feed_heartbeat.last_change_at end,\n" +
-    "  last_release_token = excluded.last_release_token,\n" +
-    "  last_row_count    = excluded.last_row_count,\n" +
+    'on conflict (feed_key) do update set\n' +
+    '  last_success_at   = excluded.last_success_at,\n' +
+    '  last_change_at    = case when atlas.feed_heartbeat.last_release_token is distinct from excluded.last_release_token\n' +
+    '                           then now() else atlas.feed_heartbeat.last_change_at end,\n' +
+    '  last_release_token = excluded.last_release_token,\n' +
+    '  last_row_count    = excluded.last_row_count,\n' +
     "  last_status       = 'ok',\n" +
-    "  last_error        = null,\n" +
-    "  updated_at        = now();\n"
+    '  last_error        = null,\n' +
+    '  updated_at        = now();\n'
   );
 }
