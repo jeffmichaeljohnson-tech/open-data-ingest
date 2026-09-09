@@ -1,12 +1,22 @@
 # open-data-ingest
 
-Pure transform cores for five public-data feeds, and the publish layer that
-decides what a snapshot is allowed to claim about its own licence.
+Pure transform cores for five public-data feeds (World Bank, USGS, GDACS, UNHCR,
+and OpenStreetMap worship points), and the publish layer that decides what a
+snapshot is allowed to claim about its own licence.
 
-No I/O. Every file here is a function from bytes to records, or from a snapshot
-to a publish plan. Fetching, database writes and object storage live in the
-callers, which is why the whole thing tests in a fifth of a second with no
-network and no fixtures on disk.
+**Every module is a pure function from bytes to records, so the whole test suite
+runs with no Deno permissions at all** — no `--allow-read`, `--allow-net`, nothing.
+That is the unusual, checkable property here, and you can confirm it in one command
+on a fresh clone:
+
+```
+deno test feeds/*/*.test.ts publish/*.test.ts
+```
+
+108 tests, no network, no fixtures on disk, in about 200 ms. Fetching, database
+writes and object storage all live in the callers, which is what keeps this half
+provable offline. This code is for anyone ingesting messy public feeds who needs the
+transform and the licensing to be right before a byte leaves the machine.
 
 ## The part worth reading
 
@@ -31,6 +41,65 @@ an aggregate_statistics artifact must not claim a database/share-alike licence �
 A snapshot with no registered licence descriptor is refused rather than shipped
 unlabelled. That is the whole design: the failure mode of a data pipeline is not
 a crash, it is quietly publishing something under the wrong terms.
+
+## Using it
+
+A feed transform takes the raw upstream shape and returns records that each carry
+their full provenance — no bare number is ever emitted:
+
+```ts
+import { buildCrosswalkIndex, transformWorldBankRows, POPULATION_TOTAL } from './feeds/worldbank/worldbank.ts';
+
+const crosswalk = buildCrosswalkIndex([{ iso_a3: 'NGA', wb_code: 'NGA', m49_macro_region_code: 2 }]);
+const { records } = transformWorldBankRows(POPULATION_TOTAL, [{
+  indicator: { id: 'SP.POP.TOTL', value: 'Population, total' },
+  country: { id: 'NG', value: 'Nigeria' },
+  countryiso3code: 'NGA', date: '2024', value: 227882945,
+  unit: '', obs_status: '', decimal: 0,
+}], { crosswalk, releaseVersion: '2026-07-13', sourcePublishedAt: '2026-07-13', retrievedAt: '2026-08-17T00:00:00.000Z', licenceKey: 'cc_by_4' });
+```
+
+`records[0]` is a fully attributed observation — note `agg_method: "sum"` (population
+is extensive and summable) and the release version travelling with the value:
+
+```json
+{
+  "indicator": "population_total",
+  "area_type": "country",
+  "area_code": "NGA",
+  "ref_period": "2024",
+  "value": 227882945,
+  "unit": "people",
+  "agg_method": "sum",
+  "denominator_indicator": null,
+  "denominator_value": null,
+  "source": "World Bank",
+  "source_dataset": "SP.POP.TOTL",
+  "release_version": "2026-07-13",
+  "reference_year": 2024,
+  "source_published_at": "2026-07-13",
+  "retrieved_at": "2026-08-17T00:00:00.000Z",
+  "licence_key": "cc_by_4"
+}
+```
+
+The publish layer then labels the artifact — and refuses to mislabel it. Handing an
+aggregate a share-alike licence it has no business claiming throws before anything is
+written:
+
+```ts
+import { validateLicence } from './publish/snapshotPublish.ts';
+
+validateLicence({ class: 'aggregate_statistics', spdx: 'ODbL-1.0', attribution: 'The World Bank' });
+// Error: an aggregate_statistics artifact must not claim a database/share-alike
+//        licence ('ODbL-1.0') — it is a picture of numbers, not a re-usable database
+```
+
+The other direction is enforced too: an OpenStreetMap-derived `derivative_database`
+artifact is refused unless it carries ODbL, the "© OpenStreetMap contributors"
+attribution, the licence URL, and the §4.6 data-availability notice. `planPublish`
+stamps the worship feed from that descriptor, so every fetchable tile carries the
+obligation — never just the index.
 
 ## The feeds
 
@@ -63,9 +132,11 @@ invisible until it is a year long.
 deno task test
 ```
 
-100 tests, all passing, in about 200 ms. The suite declares **no Deno
+108 tests, all passing, in about 200 ms. The suite declares **no Deno
 permissions at all** — not even `--allow-read` — which is what makes the "no I/O"
-claim above checkable rather than asserted.
+claim above checkable rather than asserted. `deno lint` and `deno check` are clean;
+`deno fmt` is deliberately not adopted (the code keeps a dense, wide layout that the
+formatter's rewrapping would fragment).
 
 ## Mutation
 
@@ -76,7 +147,7 @@ code were wrong. So the mutations are committed rather than described:
 deno task mutation
 ```
 
-`mutations.json` lists fifteen changes to real logic. The runner applies each one,
+`mutations.json` lists seventeen changes to real logic. The runner applies each one,
 runs the suite, restores the file and verifies the restore by hash. It reports
 four verdicts, and the third is why it exists:
 
