@@ -1,0 +1,15 @@
+{
+  "name": "open-data-ingest",
+  "version": "0.1.0",
+  "exports": {
+    "./publish": "./publish/snapshotPublish.ts",
+    "./worldbank": "./feeds/worldbank/worldbank.ts",
+    "./usgs": "./feeds/usgs/usgs.ts",
+    "./gdacs": "./feeds/gdacs/gdacs.ts",
+    "./unhcr": "./feeds/unhcr/unhcr.ts",
+    "./worship": "./feeds/worship/worship.ts"
+  },
+  "tasks": {
+    "test": "deno test --allow-read feeds/*/*.test.ts publish/*.test.ts"
+  }
+}

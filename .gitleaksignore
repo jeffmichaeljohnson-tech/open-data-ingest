@@ -1,0 +1,9 @@
+# This repository contains no credentials. It authenticates nothing and makes no
+# network call: every module is a pure function from input to records.
+#
+# One heuristic false positive is excused inline at its own line rather than by
+# fingerprint here, because a fingerprint in git-history mode is keyed to a
+# commit hash and silently stops matching the moment history is rewritten.
+#
+# An earlier version of this file quoted the flagged line in order to explain it,
+# and gitleaks then flagged this file — the same defect it existed to excuse.
