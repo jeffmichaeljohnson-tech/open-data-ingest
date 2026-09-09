@@ -91,6 +91,18 @@
       "file": "publish/snapshotPublish.ts",
       "find": "!/[\\p{L}\\p{N}]/u.test(desc.attribution.replace(/\\p{Cf}/gu, ''))",
       "replace": "desc.attribution.trim() === ''"
+    },
+    {
+      "name": "CC-BY-SA-2.0 dropped from the copyleft set — an aggregate may claim it again",
+      "file": "publish/snapshotPublish.ts",
+      "find": "  'CC-BY-SA-2.0',\n",
+      "replace": ""
+    },
+    {
+      "name": "a finite out-of-range USGS timestamp is no longer bounded, crashing the batch",
+      "file": "feeds/usgs/usgs.ts",
+      "find": " || Math.abs(props.time) > MAX_EPOCH_MS",
+      "replace": ""
     }
   ]
 }

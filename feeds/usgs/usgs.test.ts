@@ -19,7 +19,7 @@ import {
   assertThrows,
   assertStringIncludes,
   assertNotEquals,
-} from 'https://deno.land/std@0.224.0/assert/mod.ts';
+} from '@std/assert';
 import {
   parseUsgsResponse,
   transformUsgsFeatures,
@@ -172,6 +172,23 @@ Deno.test('transform — a missing origin time is skipped (occurred_at cannot be
   const { records, skipped } = transformUsgsFeatures([feature('notime', [1, 1, 5], { time: null })], OPTS);
   assertEquals(records.length, 0);
   assertEquals(skipped[0].reason, 'missing_time');
+});
+
+Deno.test('transform — a finite but out-of-range epoch is skipped, never allowed to crash the batch', () => {
+  // A corrupt/sentinel timestamp such as 1e20 is `Number.isFinite`, so it slipped
+  // past the missing-time check — then `new Date(1e20).toISOString()` throws
+  // "Invalid time value", turning ONE bad feature into a lost batch. That breaks
+  // the module's contract: a per-feature problem SKIPS with a reason, it never
+  // throws. A real quake in the same batch must still survive the bad neighbour.
+  const good = feature('us-good', [1, 1, 5]);
+  const bad = feature('us-bad', [2, 2, 5], { time: 1e20 });
+  const negBad = feature('us-negbad', [3, 3, 5], { time: -1e20 });
+  const { records, skipped } = transformUsgsFeatures([good, bad, negBad], OPTS);
+  assertEquals(records.length, 1, 'the one valid quake survived');
+  assertEquals(records[0].external_id, 'us-good');
+  const badReasons = skipped.filter((s) => s.id === 'us-bad' || s.id === 'us-negbad');
+  assertEquals(badReasons.length, 2);
+  for (const s of badReasons) assertEquals(s.reason, 'missing_time');
 });
 
 Deno.test('transform — a non-earthquake type is recorded verbatim, not assumed', () => {

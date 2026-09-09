@@ -17,7 +17,7 @@ import {
   assertNotEquals,
   assertThrows,
   assertStringIncludes,
-} from 'https://deno.land/std@0.224.0/assert/mod.ts';
+} from '@std/assert';
 import {
   planPublish,
   contentKey,
@@ -27,6 +27,7 @@ import {
   buildLicenceBlock,
   validateLicence,
   formatPlan,
+  humanBytes,
   LICENCE_REGISTER,
   type PublishableSnapshot,
   type LicenceDescriptor,
@@ -278,6 +279,19 @@ Deno.test('the dry-run report lists both keys, their headers and the total size'
   assertStringIncludes(formatPlan(planPublish(snap, { clock: 'reference' }), { willUpload: true }), '--upload SET');
 });
 
+Deno.test('humanBytes picks the right unit at each boundary and rounds as documented', () => {
+  // The dry-run report a human reads is built from this; it is exported and had no
+  // direct test, so the unit thresholds (1024, 1 MB) and the decimal places went
+  // unpinned. Assert both sides of each boundary.
+  assertEquals(humanBytes(0), '0 B');
+  assertEquals(humanBytes(1023), '1023 B'); // last byte-unit value
+  assertEquals(humanBytes(1024), '1.0 KB'); // first KB value, one decimal
+  assertEquals(humanBytes(1536), '1.5 KB');
+  assertEquals(humanBytes(1024 * 1024 - 1), '1024.0 KB'); // last KB value
+  assertEquals(humanBytes(1024 * 1024), '1.00 MB'); // first MB value, two decimals
+  assertEquals(humanBytes(5 * 1024 * 1024 + 512 * 1024), '5.50 MB');
+});
+
 // ===========================================================================
 // SPELLING IS NOT POLICY
 //
@@ -316,6 +330,32 @@ Deno.test('an aggregate may not claim a share-alike licence, however it is spell
                       'CC-BY-SA-4.0-or-later']) {
     assertThrows(() => validateLicence(aggDesc(spdx)), Error, 'must not claim',
       `an aggregate claiming ${spdx} was accepted`);
+  }
+});
+
+Deno.test('every CC-BY-SA version is share-alike, including the 2.x legacy datasets carry', () => {
+  // The header above names CC-BY-SA 2.0 and 2.5 as "the versions most legacy
+  // datasets actually carry", but the copyleft set only listed 3.0 and 4.0 — so a
+  // 2.x id was wrong in BOTH directions at once, exactly like the original casing
+  // slip: an aggregate could falsely claim CC-BY-SA-2.0, and a genuine CC-BY-SA-2.0
+  // database was refused publication. CC-BY-SA is share-alike at every version.
+  for (const spdx of ['CC-BY-SA-2.0', 'CC-BY-SA-2.5', 'cc-by-sa-2.0', ' CC-BY-SA-2.5 ',
+                      'CC-BY-SA-2.0-or-later']) {
+    // an aggregate must NOT be allowed to claim it
+    assertThrows(() => validateLicence(aggDesc(spdx)), Error, 'must not claim',
+      `an aggregate claiming ${spdx} was accepted`);
+    // and a real derivative database carrying it must be ACCEPTED, not refused
+    validateLicence(dbDesc(spdx));
+  }
+});
+
+Deno.test('normalisation does not over-match — a genuinely permissive licence is not flagged copyleft', () => {
+  // The control for the test above: the copyleft check must reject share-alike ids
+  // WITHOUT sweeping up permissive ones. An aggregate carrying any of these is
+  // correct and must pass; a `CC-BY-SA` substring test (rather than the explicit
+  // set) would wrongly flag none of them, but a too-eager prefix match could.
+  for (const spdx of ['CC-BY-4.0', 'MIT', 'public-domain', 'CC0-1.0', 'CC-BY-3.0', 'ODC-By-1.0']) {
+    validateLicence(aggDesc(spdx)); // must NOT throw
   }
 });
 

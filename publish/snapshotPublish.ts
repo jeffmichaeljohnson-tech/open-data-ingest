@@ -1,19 +1,10 @@
 /**
  * snapshotPublish.ts — the PURE publish layer: take a built, content-hashed
- * snapshot and decide EXACTLY what lands in R2 — the keys, the caching headers,
- * and the licence labelling — with no network and no filesystem. `publish.ts` (the
- * Deno CLI the human runs) is the thin shell that does the actual I/O; everything
- * here is fixture-testable, which is why the key/licence/header rules live in one
- * place that `deno test` can prove offline.
- *
- * WHY THIS DIRECTORY IS `_atlas-publish` AND NOT A FUNCTION. The Supabase CLI
- * bundles and deploys every directory under supabase/functions/ EXCEPT those whose
- * name starts with `_` (that is exactly why the shared code lives in `_shared`).
- * The publish step is NOT an edge function — it is a step a human runs from a
- * shell script (see scripts/publish-atlas-snapshot.sh) — so it must live somewhere
- * the deployer ignores. A leading underscore is that somewhere. It also cannot live
- * in `_shared` (owned by another lane) or in atlas-ingest-worldbank/ (owns the
- * snapshot BUILD, not its publication), so a new `_`-prefixed sibling is the home.
+ * snapshot and decide EXACTLY what lands in object storage — the keys, the caching
+ * headers, and the licence labelling — with no network and no filesystem. The CLI a
+ * human runs is the thin shell that does the actual I/O (it fetches nothing here and
+ * writes nothing here); everything in this file is fixture-testable, which is why the
+ * key/licence/header rules live in one place that `deno test` can prove offline.
  *
  * ────────────────────────────────────────────────────────────────────────────
  * THE TWO IDEAS THIS FILE EXISTS TO GET RIGHT
@@ -118,7 +109,17 @@ export interface LicenceDescriptor {
  * falsely assert the file is a re-usable database under copyleft. Kept as a small
  * explicit set rather than a substring test so a new licence is a deliberate add.
  */
-const DATABASE_COPYLEFT_SPDX = new Set(['ODBL-1.0', 'CC-BY-SA-4.0', 'CC-BY-SA-3.0']);
+const DATABASE_COPYLEFT_SPDX = new Set([
+  'ODBL-1.0',
+  // CC-BY-SA is share-alike at EVERY version. 2.0 and 2.5 are the spellings most
+  // legacy open datasets actually carry, so leaving them out let an aggregate
+  // falsely claim one and refused a genuine CC-BY-SA-2.x database — wrong in both
+  // directions, the same failure the casing bug had. Membership is normalised-uppercase.
+  'CC-BY-SA-4.0',
+  'CC-BY-SA-3.0',
+  'CC-BY-SA-2.5',
+  'CC-BY-SA-2.0',
+]);
 
 /**
  * Normalise an SPDX id before any membership test.

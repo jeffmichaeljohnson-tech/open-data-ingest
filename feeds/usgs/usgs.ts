@@ -202,6 +202,11 @@ export function parseUsgsResponse(body: unknown): ParsedUsgsResponse {
 const MAG_MIN = -2;
 const MAG_MAX = 12;
 
+/** The largest epoch-ms a JS `Date` accepts (±8.64e15). A finite value beyond it is
+ *  a corrupt/sentinel timestamp: `new Date(v).toISOString()` throws on it, so it is
+ *  treated as an unusable time and skipped, never allowed to crash the batch. */
+const MAX_EPOCH_MS = 8.64e15;
+
 export interface TransformOptions {
   feedKey: string;
   /** metadata.generated as a string — the vintage / release token. Required. */
@@ -243,8 +248,11 @@ export function transformUsgsFeatures(features: UsgsFeature[], opts: TransformOp
       continue;
     }
 
-    // 3. Origin time is required — occurred_at is NOT NULL and a faked time would be a lie.
-    if (typeof props.time !== 'number' || !Number.isFinite(props.time)) {
+    // 3. Origin time is required — occurred_at is NOT NULL and a faked time would be a
+    //    lie. A finite but out-of-range epoch (a sentinel like 1e20) is unusable too:
+    //    `new Date(...).toISOString()` throws on it, so it is skipped here rather than
+    //    allowed to crash the whole batch on one corrupt feature.
+    if (typeof props.time !== 'number' || !Number.isFinite(props.time) || Math.abs(props.time) > MAX_EPOCH_MS) {
       skipped.push({ id, reason: 'missing_time', detail: `time=${String(props.time)}` });
       continue;
     }
