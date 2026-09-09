@@ -277,3 +277,82 @@ Deno.test('the dry-run report lists both keys, their headers and the total size'
   // and when upload is armed, it says so instead
   assertStringIncludes(formatPlan(planPublish(snap, { clock: 'reference' }), { willUpload: true }), '--upload SET');
 });
+
+// ===========================================================================
+// SPELLING IS NOT POLICY
+//
+// Found by a red-team pass. `DATABASE_COPYLEFT_SPDX.has(desc.spdx)` was an
+// exact, case-sensitive lookup, and the same Set runs both legs of the gate —
+// so one casing slip was wrong in BOTH directions at once: it rejected a genuine
+// ODbL database, and accepted a share-alike claim on a picture of numbers.
+//
+// Every id below is a real SPDX spelling, not a contrivance. CC-BY-SA 2.0 and
+// 2.5 are the versions most legacy datasets actually carry.
+// ===========================================================================
+const dbDesc = (spdx: string): LicenceDescriptor => ({
+  class: 'derivative_database',
+  spdx,
+  attribution: '© OpenStreetMap contributors',
+  licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
+  dataAvailabilityNotice: 'The full database is available under the ODbL.',
+});
+const aggDesc = (spdx: string): LicenceDescriptor => ({
+  class: 'aggregate_statistics',
+  spdx,
+  attribution: 'The World Bank',
+});
+
+Deno.test('a database licence is recognised however it is spelled', () => {
+  for (const spdx of ['ODbL-1.0', 'odbl-1.0', 'ODBL-1.0', 'OdbL-1.0', ' ODbL-1.0 ',
+                      'ODbL-1.0+', 'ODC-ODbL-1.0', 'CC-BY-SA-4.0', 'cc-by-sa-3.0',
+                      'CC-BY-SA-4.0-or-later']) {
+    validateLicence(dbDesc(spdx));
+  }
+});
+
+Deno.test('an aggregate may not claim a share-alike licence, however it is spelled', () => {
+  for (const spdx of ['ODbL-1.0', 'odbl-1.0', 'ODBL-1.0', 'ODbL-1.0+', 'ODC-ODbL-1.0',
+                      'CC-BY-SA-4.0', 'cc-by-sa-4.0', 'CC-BY-SA-3.0', ' CC-BY-SA-4.0',
+                      'CC-BY-SA-4.0-or-later']) {
+    assertThrows(() => validateLicence(aggDesc(spdx)), Error, 'must not claim',
+      `an aggregate claiming ${spdx} was accepted`);
+  }
+});
+
+Deno.test('a licence class outside the union is refused, not treated as an aggregate', () => {
+  // These used to fall through to the aggregate branch, silently stripping every
+  // database obligation from an artifact that meant to carry them.
+  for (const cls of ['derivative_databases', 'DERIVATIVE_DATABASE', 'derivative_database ',
+                     '', undefined, null, 42]) {
+    assertThrows(
+      () => validateLicence({ ...dbDesc('ODbL-1.0'), class: cls } as unknown as LicenceDescriptor),
+      Error, 'licence class must be',
+      `class ${JSON.stringify(cls)} was accepted`,
+    );
+  }
+});
+
+Deno.test('an attribution nobody can see is not an attribution', () => {
+  // String.trim() strips Zs and the BOM but NOT format characters, so each of
+  // these satisfied a check whose whole subject is that attribution is required.
+  for (const attribution of ['​', '⁠', '‌', '­', '᠎',
+                             '  ​  ', '', '   ']) {
+    assertThrows(() => validateLicence({ ...aggDesc('CC-BY-4.0'), attribution }),
+      Error, 'has no attribution', `attribution ${JSON.stringify(attribution)} was accepted`);
+  }
+  // The control: a real attribution still passes, so this is not a blanket refusal.
+  validateLicence({ ...aggDesc('CC-BY-4.0'), attribution: 'The World Bank' });
+});
+
+Deno.test('an empty SPDX id is refused on both classes', () => {
+  assertThrows(() => validateLicence(aggDesc('')), Error, 'no SPDX id');
+  assertThrows(() => validateLicence(aggDesc('   ')), Error, 'no SPDX id');
+});
+
+Deno.test('a whitespace-only licence URL does not satisfy ODbL', () => {
+  // '' was refused and '   ' was not: a bare falsy check beside a trimmed one.
+  assertThrows(() => validateLicence({ ...dbDesc('ODbL-1.0'), licenceUrl: '   ' }),
+    Error, 'licence URL');
+  assertThrows(() => validateLicence({ ...dbDesc('ODbL-1.0'), licenceUrl: '' }),
+    Error, 'licence URL');
+});

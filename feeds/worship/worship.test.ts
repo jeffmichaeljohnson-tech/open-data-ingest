@@ -209,23 +209,65 @@ Deno.test('base64(PWT1) is dramatically smaller than a naive {lat,lon,religion} 
 });
 
 // ===========================================================================
-// (5) REAL BYTES — wrap the actual committed overview tile and prove it decodes.
-//     Skipped (not failed) if the asset is absent, so the suite runs anywhere.
+// (5) END TO END — encode real bytes, wrap them, and prove the artifact decodes
+//     back to exactly what went in.
+//
+//     This used to read a committed tile from `apps/web/public/`, three levels
+//     above this repository, inside a try/catch that returned on failure. The
+//     path can never resolve here, so the catch always ran and Deno reported the
+//     test as PASSING — a test counted in the suite total that asserted nothing.
+//     The comment said "skipped (not failed)"; Deno has no skip for that shape,
+//     and the intent did not survive contact with the mechanism.
+//
+//     Encoding the bytes here is strictly better: it exercises the same
+//     round-trip, it cannot silently degrade, and it needs no file on disk.
 // ===========================================================================
-Deno.test('the committed overview.pwt wraps into a valid, decodable ODbL artifact', async () => {
-  let bytes: Uint8Array;
-  try {
-    bytes = await Deno.readFile(new URL('../../../apps/web/public/worship/overview.pwt', import.meta.url));
-  } catch {
-    console.warn('  (skipped — apps/web/public/worship/overview.pwt not present)');
-    return;
-  }
+Deno.test('a real encoded tile wraps into a valid, decodable ODbL artifact', async () => {
+  const points = [
+    { lon: -0.1276, lat: 51.5074, religion: 0 },
+    { lon: 2.3522, lat: 48.8566, religion: 1 },
+    { lon: 13.405, lat: 52.52, religion: 2 },
+    { lon: -74.006, lat: 40.7128, religion: 0 },
+  ];
+  const bytes = encodePwt(points, { minLon: -180, minLat: -90, spanLon: 360, spanLat: 180 });
+
   const snap = await buildTileSnapshot(bytes, OVERVIEW_FEED_KEY, 'overview', META);
   const artifact = JSON.parse(
-    planPublish(snap, { clock: 'geometry', licence: ODBL, sourceChangedAt: META.releaseVersion }).objects.find((o) => o.kind === 'artifact')!.body,
+    planPublish(snap, { clock: 'geometry', licence: ODBL, sourceChangedAt: META.releaseVersion })
+      .objects.find((o) => o.kind === 'artifact')!.body,
   );
+
   assertEquals(artifact.licence.spdx, 'ODbL-1.0');
+  assertEquals(artifact.licence.is_reusable_database, true);
+  assertStringIncludes(artifact.licence.attribution, 'OpenStreetMap');
+
   const decoded = decodePwt(base64ToBytes(artifact.pwt_base64));
   assertEquals(decoded.length, artifact.point_count);
-  assert(decoded.length > 0);
+  assertEquals(decoded.length, points.length);
+
+  // Quantisation is lossy by design, so assert the documented tolerance rather
+  // than equality. A silently wrong codec would fail here.
+  for (let i = 0; i < points.length; i++) {
+    assert(Math.abs(decoded[i].lon - points[i].lon) < 0.01, `lon drifted at ${i}`);
+    assert(Math.abs(decoded[i].lat - points[i].lat) < 0.01, `lat drifted at ${i}`);
+    assertEquals(decoded[i].religion, points[i].religion);
+  }
+});
+
+Deno.test('a coordinate outside the tile is clamped to the edge, never wrapped', () => {
+  // Found by mutation: removing the clamp left the suite green, and a range
+  // assertion was too weak to catch it — setUint16 truncates, so a wrapped
+  // value still lands INSIDE the tile, just at the wrong place. Measured with
+  // the clamp removed: lon -50 decoded to 0.0008 and lon 500 to 9.9925 instead
+  // of the exact edges. So the assertion has to be exactness, not range.
+  const tile = { minLon: 0, minLat: 0, spanLon: 10, spanLat: 10 };
+  const decoded = decodePwt(encodePwt([
+    { lon: -50, lat: -50, religion: 0 },
+    { lon: 500, lat: 500, religion: 1 },
+  ], tile));
+
+  assertAlmostEquals(decoded[0].lon, 0, 1e-9, 'a point west of the tile did not clamp to the west edge');
+  assertAlmostEquals(decoded[0].lat, 0, 1e-9, 'a point south of the tile did not clamp to the south edge');
+  assertAlmostEquals(decoded[1].lon, 10, 1e-9, 'a point east of the tile did not clamp to the east edge');
+  assertAlmostEquals(decoded[1].lat, 10, 1e-9, 'a point north of the tile did not clamp to the north edge');
 });

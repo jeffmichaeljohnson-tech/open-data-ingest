@@ -63,8 +63,9 @@ invisible until it is a year long.
 deno task test
 ```
 
-93 tests, all passing, in about 165 ms:
-worldbank 13 · usgs 18 · gdacs 22 · unhcr 14 · worship 11 · publish 15.
+100 tests, all passing, in about 200 ms. The suite declares **no Deno
+permissions at all** — not even `--allow-read` — which is what makes the "no I/O"
+claim above checkable rather than asserted.
 
 ## Mutation
 
@@ -75,7 +76,7 @@ code were wrong. So the mutations are committed rather than described:
 deno task mutation
 ```
 
-`mutations.json` lists eight changes to real logic. The runner applies each one,
+`mutations.json` lists fifteen changes to real logic. The runner applies each one,
 runs the suite, restores the file and verifies the restore by hash. It reports
 four verdicts, and the third is why it exists:
 
@@ -94,8 +95,41 @@ exit without it is `INCONCLUSIVE` — never counted as caught.
 The runner has its own suite (`deno task test:mutation-runner`), because a tool that measures test suites
 is itself a check, and a check nobody has watched fail is a claim.
 
-The eight are every leg of the licence gate disabled in turn, and the two cache
-policies swapped for each other.
+They are every leg of the licence gate disabled in turn, the two cache policies
+swapped for each other, and the normalisation and validation added after a
+red-team pass found the gate could be walked past by spelling.
+
+## What a red-team pass found, and what it cost to close
+
+Worth stating plainly, because the fixes are the interesting part.
+
+**The gate could be defeated by casing.** `DATABASE_COPYLEFT_SPDX.has(spdx)` was an
+exact, case-sensitive lookup, and the same set runs both legs — so `odbl-1.0` was
+wrong in *both directions at once*: rejected on a genuine ODbL database, and
+accepted on an aggregate. `CC-BY-SA-2.0`, `ODbL-1.0+` and `ODC-ODbL-1.0` are all
+real SPDX spellings and all slipped. Spelling is now normalised before the
+lookup; the set stays explicit, because membership is policy and normalisation
+is not.
+
+**A class outside the union fell through to the aggregate branch**, so a typo
+silently stripped every database obligation. Now named and refused.
+
+**A zero-width space satisfied "attribution is never optional".** `String.trim()`
+strips spaces and the BOM but not format characters. The check now requires at
+least one letter or digit after those are removed.
+
+**One test could not fail.** It read a tile from a path three directories above
+the repository, inside a `try/catch` that returned — so it always "passed" while
+asserting nothing, and was counted in the headline. It now encodes real bytes
+with this package's own codec and round-trips them, which tests strictly more
+and depends on nothing outside the repo. Removing it is also what let the suite
+drop its last permission flag.
+
+**And the clamp test I first wrote was too weak to catch its own mutation.**
+Removing the coordinate clamp leaves values *inside* the tile — `setUint16`
+truncates, so an out-of-range point wraps to 0.0008 rather than the exact edge.
+A range assertion passed; only asserting the exact edge fails. Mutation testing
+caught the test, not just the code.
 
 MIT licensed. The *data* each feed describes carries its own licence, which is
 the entire subject of the publish layer.

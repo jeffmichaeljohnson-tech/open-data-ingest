@@ -118,7 +118,30 @@ export interface LicenceDescriptor {
  * falsely assert the file is a re-usable database under copyleft. Kept as a small
  * explicit set rather than a substring test so a new licence is a deliberate add.
  */
-const DATABASE_COPYLEFT_SPDX = new Set(['ODbL-1.0', 'CC-BY-SA-4.0', 'CC-BY-SA-3.0']);
+const DATABASE_COPYLEFT_SPDX = new Set(['ODBL-1.0', 'CC-BY-SA-4.0', 'CC-BY-SA-3.0']);
+
+/**
+ * Normalise an SPDX id before any membership test.
+ *
+ * The set above was compared with `.has(desc.spdx)` on the raw string, which is
+ * exact and case-sensitive, so one casing slip was wrong in BOTH directions at
+ * once: `odbl-1.0` was rejected on a genuine ODbL database, and the same id was
+ * accepted on an aggregate because it missed the copyleft set there too. The
+ * `-or-later` and `+` suffixes are real SPDX syntax and failed the same way.
+ *
+ * Deliberately NOT a substring test: the set stays explicit so adding a licence
+ * remains a reviewable act. Only the spelling is normalised, never the policy.
+ */
+function normaliseSpdx(spdx: string): string {
+  return spdx.trim().toUpperCase().replace(/(-OR-LATER|\+)$/, '');
+}
+
+/** Is this a database/share-alike licence, whatever its spelling? */
+function isDatabaseCopyleft(spdx: string): boolean {
+  const id = normaliseSpdx(spdx);
+  // ODC-ODbL-1.0 is the same licence under its Open Data Commons prefix.
+  return DATABASE_COPYLEFT_SPDX.has(id) || DATABASE_COPYLEFT_SPDX.has(id.replace(/^ODC-/, ''));
+}
 
 /**
  * Validate a licence descriptor against its class. This is where the two-class
@@ -129,18 +152,34 @@ const DATABASE_COPYLEFT_SPDX = new Set(['ODbL-1.0', 'CC-BY-SA-4.0', 'CC-BY-SA-3.
  * than a failed publish.
  */
 export function validateLicence(desc: LicenceDescriptor): void {
-  if (!desc.attribution || desc.attribution.trim() === '') {
+  // A class outside the union used to fall through to the aggregate branch,
+  // so a typo silently stripped every database obligation. Named explicitly.
+  if (desc.class !== 'aggregate_statistics' && desc.class !== 'derivative_database') {
+    throw new Error(
+      `licence class must be 'aggregate_statistics' or 'derivative_database'; got ${JSON.stringify(desc.class)}`,
+    );
+  }
+
+  // `trim()` strips Zs and the BOM but NOT the format characters, so a
+  // zero-width space passed as an attribution. Strip those too before deciding
+  // a string is empty, and require it to carry at least one letter or digit:
+  // an attribution nobody can see is not an attribution.
+  if (!desc.attribution || !/[\p{L}\p{N}]/u.test(desc.attribution.replace(/\p{Cf}/gu, ''))) {
     throw new Error(`licence for class '${desc.class}' has no attribution — attribution is never optional`);
+  }
+
+  if (!desc.spdx || normaliseSpdx(desc.spdx) === '') {
+    throw new Error(`licence for class '${desc.class}' has no SPDX id`);
   }
 
   if (desc.class === 'derivative_database') {
     // The OSM worship-points case. The labelling obligation is the whole point.
-    if (!DATABASE_COPYLEFT_SPDX.has(desc.spdx)) {
+    if (!isDatabaseCopyleft(desc.spdx)) {
       throw new Error(
         `a derivative_database artifact must carry a database/share-alike licence (e.g. ODbL-1.0); got '${desc.spdx}'`,
       );
     }
-    if (!desc.licenceUrl) {
+    if (!desc.licenceUrl || desc.licenceUrl.trim() === '') {
       throw new Error('a derivative_database artifact must carry its licence URL (ODbL requires the licence travel with the data)');
     }
     if (!desc.dataAvailabilityNotice || desc.dataAvailabilityNotice.trim() === '') {
@@ -150,7 +189,7 @@ export function validateLicence(desc: LicenceDescriptor): void {
   }
 
   // aggregate_statistics — a picture of numbers, NOT a database.
-  if (DATABASE_COPYLEFT_SPDX.has(desc.spdx)) {
+  if (isDatabaseCopyleft(desc.spdx)) {
     throw new Error(
       `an aggregate_statistics artifact must not claim a database/share-alike licence ('${desc.spdx}') — it is a picture of numbers, not a re-usable database`,
     );
