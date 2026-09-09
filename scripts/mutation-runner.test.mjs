@@ -9,6 +9,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runOne, runAll, report, checkBaseline, KILLED, SURVIVED, INCONCLUSIVE, NOT_APPLIED }
   from './mutation-runner.mjs';
+import * as runner from './mutation-runner.mjs';
 
 let pass = 0, fail = 0;
 const t = (name, fn) => {
@@ -88,6 +89,23 @@ t('the mutation is genuinely in the file while the command runs', () => {
     return { out: 'Tests  1 failed', code: 1 };
   });
   assert(seen.includes('LIMIT = 20'), 'the command saw the UNMUTATED file');
+  rmSync(d, { recursive: true });
+});
+
+t('inFlight names the live mutation during the run, so a signal handler can restore it', () => {
+  // The signal handlers (layer 2) restore `inFlight` if a signal lands BETWEEN
+  // mutations. They read inFlight.file / .before / .rel — but runOne never set the
+  // binding, so it was always null and the whole layer was inert: prose describing
+  // a safety net that was not wired. It must be populated while the command runs
+  // and cleared afterwards.
+  const d = fixture();
+  let during = null;
+  runOne(d, spec(), () => { during = runner.inFlight; return { out: 'Tests  1 failed', code: 1 }; });
+  assert(during !== null, 'inFlight was null during the run — layer 2 could never restore');
+  eq(during.file, path.join(d, 'a.js'), 'inFlight.file');
+  eq(during.before, SRC, 'inFlight.before must hold the pre-mutation content to restore');
+  assert(typeof during.rel === 'string' && during.rel.length > 0, 'inFlight.rel must name the file for the log');
+  assert(runner.inFlight === null, 'inFlight was not cleared after the run');
   rmSync(d, { recursive: true });
 });
 

@@ -54,6 +54,11 @@ export function runOne(root, spec, exec) {
   }
   let out = '', code = 0;
   try {
+    // Record the in-flight mutation BEFORE touching disk, so a signal landing
+    // between mutations (the layer-2 handlers below) can restore the original.
+    // Without this the handlers read a binding that was always null and could
+    // restore nothing.
+    inFlight = { file, before, rel: spec.file };
     // A FUNCTION as the replacement, deliberately. Passing a string lets JS
     // interpret $&, $`, $', $$ and $1..$9 inside it as substitution patterns,
     // which silently corrupts any mutation whose replacement contains a dollar
