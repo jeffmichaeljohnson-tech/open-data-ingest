@@ -19,7 +19,7 @@ name: Mutation score
 # bare, and NOT `--allow-read`: a first version of this file granted read as
 # well, which was an over-grant nobody needed and a poor look in the one
 # repository whose argument is least privilege. Measured before it was removed --
-# 255 tests pass with `--allow-env=__STRYKER_ACTIVE_MUTANT__` alone.
+# 268 tests pass with `--allow-env=__STRYKER_ACTIVE_MUTANT__` alone.
 #
 # The permission model refusing a tool this way is the model working.
 on:
