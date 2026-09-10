@@ -1,0 +1,36 @@
+name: Toolchain drift
+
+# CI pins Deno to a minor so a toolchain release cannot turn an unrelated pull
+# request red. That pin has a cost: it means nothing would notice a new lint
+# rule or a formatter change until someone bumped it by hand, which in practice
+# means years.
+#
+# This job pays that cost on a schedule instead. It runs the same checks against
+# the floating latest v2, where a failure means "the pin is behind, go look",
+# not "this change is wrong". Kept off the pull-request path on purpose: the
+# whole point is that no contributor should ever meet this failure.
+on:
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  latest-deno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno --version
+      - name: lint
+        run: deno lint
+      - name: format
+        run: deno fmt --check
+      - name: type-check
+        run: deno check feeds/*/*.ts feeds/*/*.test.ts publish/*.ts publish/*.test.ts
+      - name: test
+        run: deno task test

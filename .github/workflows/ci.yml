@@ -3,14 +3,27 @@ on:
   push:
     branches: [main]
   pull_request:
+
+# Least privilege: nothing here writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Pinned to a minor, not floating on v2.x. `deno lint` gains rules and
+      # `deno fmt` changes its output across minor releases, so a floating pin
+      # means a repository that is green today goes red in three months with no
+      # commit in between -- the change came from the toolchain, and the person
+      # who meets it is whoever opened the next unrelated pull request. The
+      # scheduled job in toolchain-drift.yml watches the floating version
+      # instead, where a red result means "go bump the pin" rather than "your
+      # change is wrong". Last verified against 2.9.6 on linux.
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v2.9.x
       - name: lint
         run: deno lint
       - name: format
