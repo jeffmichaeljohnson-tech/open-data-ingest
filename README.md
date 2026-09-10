@@ -149,6 +149,54 @@ The runner has its own suite (`deno task test:mutation-runner`), because a tool 
 They are every leg of the licence gate disabled in turn, the two cache policies swapped for each other, and the normalisation and validation added after a red-team pass found the
 gate could be walked past by spelling.
 
+### The curated set is not a mutation score
+
+Seventeen of seventeen is a perfect result against a list I wrote, which proves that my imagination and my tests agree. They always do. The number below is the one a reviewer gets:
+
+```
+npm i -D @stryker-mutator/core@^9
+npx stryker run
+```
+
+**1,581 generated mutants, 1,503 caught — 95.19%.**
+
+| file                               | score  |
+| ---------------------------------- | ------ |
+| `publish/snapshotPublish.ts`       | 98.54% |
+| `usgs/sql.ts`                      | 98.51% |
+| `unhcr/sql.ts`, `worldbank/sql.ts` | 97.78% |
+| `unhcr.ts`                         | 97.41% |
+| `worldbank.ts`                     | 97.33% |
+| `worship.ts`                       | 96.99% |
+| `usgs.ts`                          | 92.88% |
+| `gdacs.ts`                         | 91.08% |
+| `gdacs/sql.ts`                     | 91.01% |
+
+The first run of this scored **62.30%**, and where it was weakest is the part worth reading. The four `sql.ts` generators — the files this project's
+[`SECURITY.md`](SECURITY.md) names as _the most serious surface_ — were the four lowest in the repository, between 47% and 60%. A security policy and the
+code behind it disagreed, and the code was the half that was wrong.
+
+Closing that found no injection defect. `lit` doubles a single quote and passes every other byte through, which is complete under PostgreSQL's default
+`standard_conforming_strings`, where an unescaped quote is the only byte that can end a literal. Each generator is now fed a payload carrying a quote, a
+backslash, a newline, a NUL, a `--`, a `;` and a `$$`, checked against a hand-written oracle rather than against a string built the same way the code
+builds it, and the assumption is stated in each file header instead of left implicit.
+
+What it did find were two fixtures that could not tell two things apart:
+
+- The World Bank `release_version` override survived because the existing test used the **same date** for `releaseVersion` and `sourcePublishedAt`. A value
+  dropped from one slot was covered by its twin.
+- A dropped `insert into atlas.feed_heartbeat` header survived because that table name also appears inside the `CASE` subqueries, so a substring assertion
+  was satisfied by the wrong occurrence.
+
+And one aliasing bug-in-waiting in the publish layer: the source-clock default sorts release tokens through a spread, and removing the spread sorts the
+**caller's** array in place. The test now asserts the input is not reordered — the kind of defect that surfaces two calls later in somebody else's code.
+
+Around thirty mutants are recorded in the test files as **equivalent**, with the reasoning beside each. A test written for one of those would pass either
+way, which is the defect this whole exercise exists to remove.
+
+A scheduled workflow re-runs the generator, so this table is measured rather than remembered. It grants exactly one environment variable —
+`__STRYKER_ACTIVE_MUTANT__` — because the harness could not otherwise read its own mutant selector inside this project's permission sandbox.
+
 ## What a red-team pass found, and what it cost to close
 
 Worth stating plainly, because the fixes are the interesting part.
