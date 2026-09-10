@@ -10,7 +10,7 @@ unusual, checkable property here, and you can confirm it in one command on a fre
 deno test feeds/*/*.test.ts publish/*.test.ts
 ```
 
-108 tests, no network, no fixtures on disk, in about 200 ms. Fetching, database writes and object storage all live in the callers, which is what keeps this half provable offline.
+255 tests, no network, no fixtures on disk, in about half a second. Fetching, database writes and object storage all live in the callers, which is what keeps this half provable offline.
 This code is for anyone ingesting messy public feeds who needs the transform and the licensing to be right before a byte leaves the machine.
 
 ## The part worth reading
@@ -116,7 +116,7 @@ long.
 deno task test
 ```
 
-108 tests, all passing, in about 200 ms. The suite declares **no Deno permissions at all** — not even `--allow-read` — which is what makes the "no I/O" claim above checkable rather
+255 tests, all passing, in about half a second. The suite declares **no Deno permissions at all** — not even `--allow-read` — which is what makes the "no I/O" claim above checkable rather
 than asserted. `deno lint`, `deno check` and `deno fmt --check` are all clean.
 
 `fmt` is configured rather than declined. The default width rewraps long template literals mid-expression, which mangles precisely the error messages that explain a refusal — the

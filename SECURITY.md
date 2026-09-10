@@ -61,8 +61,12 @@ through the same door.
 - The absence of a feed you would like to see.
 
 **Standing properties.** Deno's permission model is the boundary and it is
-narrow on purpose: the test suite runs under `--allow-read` alone. That is tight
-enough that a mutation-testing harness could not read its own selector variable
-without being granted `--allow-env=__STRYKER_ACTIVE_MUTANT__` explicitly, which
-is a fair illustration of the posture. Any command that needs a permission wider
+narrow on purpose: **the test suite runs with no permissions at all** — plain
+`deno test`, not even `--allow-read`. That is what makes the no-I/O claim
+checkable rather than merely stated, and you can check it in one command.
+
+It is tight enough that a mutation-testing harness could not read its own
+selector variable: the run failed with `NotCapable: Requires env access to
+"__STRYKER_ACTIVE_MUTANT__"`. The scheduled mutation job therefore grants that
+one named variable and nothing else. Any command that needs a permission wider
 than its documented set is a finding.

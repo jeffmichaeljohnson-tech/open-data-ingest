@@ -8,12 +8,20 @@ name: Mutation score
 # project rather lower. That number is published in the README, where a reviewer
 # can check it, rather than left for them to discover.
 #
-# The `--allow-env` grant below is worth reading. This project's suite runs under
-# `--allow-read` alone, and the sandbox is tight enough that Stryker could not
-# read its OWN mutant-selector variable: the dry run failed with
-# `NotCapable: Requires env access to "__STRYKER_ACTIVE_MUTANT__"`. The fix is to
-# grant that single named variable and nothing else -- not `--allow-env` bare.
-# The permission model doing this to a tool is the model working.
+# The `--allow-env` grant below is worth reading. This project's suite runs with
+# NO permissions at all -- `deno test` bare, which is what makes the "no I/O"
+# claim in the README checkable rather than merely stated. The sandbox is tight
+# enough that Stryker could not read its OWN mutant-selector variable: the dry
+# run failed with `NotCapable: Requires env access to
+# "__STRYKER_ACTIVE_MUTANT__"`.
+#
+# So exactly one named variable is granted and nothing else. Not `--allow-env`
+# bare, and NOT `--allow-read`: a first version of this file granted read as
+# well, which was an over-grant nobody needed and a poor look in the one
+# repository whose argument is least privilege. Measured before it was removed --
+# 255 tests pass with `--allow-env=__STRYKER_ACTIVE_MUTANT__` alone.
+#
+# The permission model refusing a tool this way is the model working.
 on:
   schedule:
     - cron: '21 6 * * 1'
@@ -42,7 +50,7 @@ jobs:
             "packageManager": "npm",
             "testRunner": "command",
             "commandRunner": {
-              "command": "deno test --allow-read --allow-env=__STRYKER_ACTIVE_MUTANT__ feeds/*/*.test.ts publish/*.test.ts"
+              "command": "deno test --allow-env=__STRYKER_ACTIVE_MUTANT__ feeds/*/*.test.ts publish/*.test.ts"
             },
             "mutate": ["feeds/**/*.ts", "publish/**/*.ts", "!**/*.test.ts"],
             "reporters": ["clear-text"],
