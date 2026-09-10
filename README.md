@@ -158,7 +158,9 @@ npm i -D --no-save "@stryker-mutator/core@^9"
 npx stryker run     # uses the committed stryker.conf.json
 ```
 
-**1,581 generated mutants, 1,503 caught — 95.19%.**
+**1,581 generated mutants, 1,505 caught — 95.19%.** The 1,505 is 1,503 caught outright plus two caught by timeout. Stryker reports those separately and
+counts both as detected, which is right: a mutant that sends the suite into a loop the harness had to interrupt is a mutant the suite noticed. The outright
+figure alone would be 95.07%, and a numerator that does not divide into the percentage beside it is the first thing a reviewer checks.
 
 | file                               | score  |
 | ---------------------------------- | ------ |
