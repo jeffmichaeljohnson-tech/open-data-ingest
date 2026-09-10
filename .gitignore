@@ -1,3 +1,4 @@
+node_modules/
 .DS_Store
 coverage/
 
@@ -14,3 +15,8 @@ id_ed25519.*
 secrets.json
 credentials.json
 *.credentials.json
+
+# --- mutation-run output: `npx stryker run` writes both, and a public
+# repository must not be dirtied by the command its own README gives ---
+reports/
+.stryker-tmp/

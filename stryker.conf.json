@@ -1,0 +1,18 @@
+{
+  "packageManager": "npm",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "deno test --allow-env=__STRYKER_ACTIVE_MUTANT__ feeds/*/*.test.ts publish/*.test.ts"
+  },
+  "mutate": [
+    "feeds/**/*.ts",
+    "publish/**/*.ts",
+    "!**/*.test.ts"
+  ],
+  "reporters": [
+    "clear-text"
+  ],
+  "concurrency": 4,
+  "coverageAnalysis": "off",
+  "timeoutMS": 60000
+}

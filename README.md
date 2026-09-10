@@ -154,8 +154,8 @@ gate could be walked past by spelling.
 Seventeen of seventeen is a perfect result against a list I wrote, which proves that my imagination and my tests agree. They always do. The number below is the one a reviewer gets:
 
 ```
-npm i -D @stryker-mutator/core@^9
-npx stryker run
+npm i -D --no-save "@stryker-mutator/core@^9"
+npx stryker run     # uses the committed stryker.conf.json
 ```
 
 **1,581 generated mutants, 1,503 caught — 95.19%.**

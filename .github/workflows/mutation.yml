@@ -15,6 +15,10 @@ name: Mutation score
 # run failed with `NotCapable: Requires env access to
 # "__STRYKER_ACTIVE_MUTANT__"`.
 #
+# That grant lives in the committed `stryker.conf.json`, which is the same file
+# `npx stryker run` picks up from a clean clone -- this job writes no config of
+# its own, so CI and a reviewer cannot measure different things.
+#
 # So exactly one named variable is granted and nothing else. Not `--allow-env`
 # bare, and NOT `--allow-read`: a first version of this file granted read as
 # well, which was an over-grant nobody needed and a poor look in the one
@@ -44,19 +48,4 @@ jobs:
       - name: install the mutant generator
         run: npm i -D --no-save "@stryker-mutator/core@^9"
       - name: mutation score
-        run: |
-          cat > stryker.conf.json <<'JSON'
-          {
-            "packageManager": "npm",
-            "testRunner": "command",
-            "commandRunner": {
-              "command": "deno test --allow-env=__STRYKER_ACTIVE_MUTANT__ feeds/*/*.test.ts publish/*.test.ts"
-            },
-            "mutate": ["feeds/**/*.ts", "publish/**/*.ts", "!**/*.test.ts"],
-            "reporters": ["clear-text"],
-            "concurrency": 4,
-            "coverageAnalysis": "off",
-            "timeoutMS": 60000
-          }
-          JSON
-          npx stryker run
+        run: npx stryker run
