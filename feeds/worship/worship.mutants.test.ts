@@ -193,7 +193,7 @@ Deno.test('codec roundtrip is exact for a tile whose points sit ON the cell edge
   // Points exactly on min and max edges quantise to 0 and 65535 respectively; decoding
   // returns the edges within the documented tolerance. This is the positive control that
   // the clamp boundary behaviour (whose `<`/`>` mutants are equivalent) is nonetheless
-  // correct — it is NOT an attempt to kill an equivalent mutant.
+  // correct — it is NOT an attempt to catch an equivalent mutant.
   const tile = { minLon: 0, minLat: 0, spanLon: 10, spanLat: 10 };
   const decoded = decodePwt(encodePwt([{ lon: 0, lat: 0, religion: 0 }, { lon: 10, lat: 10, religion: 1 }], tile));
   assert(Math.abs(decoded[0].lon - 0) < 1e-6);

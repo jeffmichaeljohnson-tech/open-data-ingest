@@ -136,12 +136,12 @@ and the third is why it exists:
 
 | verdict        | meaning                                                |
 | -------------- | ------------------------------------------------------ |
-| `KILLED`       | the suite ran and failed — the mutation is caught      |
+| `CAUGHT`       | the suite ran and failed — the mutation is caught      |
 | `SURVIVED`     | the suite ran and passed — nothing pins this behaviour |
 | `INCONCLUSIVE` | non-zero exit, but no evidence any test ran            |
 | `NOT-APPLIED`  | the pattern was absent, or matched more than once      |
 
-A mutation that stops the code compiling also exits non-zero. A runner reading only the exit code scores that as a kill it never earned, so a spec declares a marker the test runner
+A mutation that stops the code compiling also exits non-zero. A runner reading only the exit code scores that as a catch it never earned, so a spec declares a marker the test runner
 prints only when tests actually execute, and a non-zero exit without it is `INCONCLUSIVE` — never counted as caught.
 
 The runner has its own suite (`deno task test:mutation-runner`), because a tool that measures test suites is itself a check, and a check nobody has watched fail is a claim.
