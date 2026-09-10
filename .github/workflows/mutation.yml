@@ -1,0 +1,54 @@
+name: Mutation score
+
+# `mutations.json` is a CURATED set -- seventeen changes a person thought of --
+# and the suite catches all seventeen. A perfect result against a list you wrote
+# proves your imagination and your tests agree. They always do.
+#
+# Stryker generates 1,581 mutants from the syntax tree instead, and scores this
+# project rather lower. That number is published in the README, where a reviewer
+# can check it, rather than left for them to discover.
+#
+# The `--allow-env` grant below is worth reading. This project's suite runs under
+# `--allow-read` alone, and the sandbox is tight enough that Stryker could not
+# read its OWN mutant-selector variable: the dry run failed with
+# `NotCapable: Requires env access to "__STRYKER_ACTIVE_MUTANT__"`. The fix is to
+# grant that single named variable and nothing else -- not `--allow-env` bare.
+# The permission model doing this to a tool is the model working.
+on:
+  schedule:
+    - cron: '21 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stryker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: install the mutant generator
+        run: npm i -D --no-save "@stryker-mutator/core@^9"
+      - name: mutation score
+        run: |
+          cat > stryker.conf.json <<'JSON'
+          {
+            "packageManager": "npm",
+            "testRunner": "command",
+            "commandRunner": {
+              "command": "deno test --allow-read --allow-env=__STRYKER_ACTIVE_MUTANT__ feeds/*/*.test.ts publish/*.test.ts"
+            },
+            "mutate": ["feeds/**/*.ts", "publish/**/*.ts", "!**/*.test.ts"],
+            "reporters": ["clear-text"],
+            "concurrency": 4,
+            "coverageAnalysis": "off",
+            "timeoutMS": 60000
+          }
+          JSON
+          npx stryker run

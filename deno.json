@@ -29,6 +29,7 @@
     "lineWidth": 180,
     "exclude": [
       "scripts/"
-    ]
+    ],
+    "proseWrap": "preserve"
   }
 }
