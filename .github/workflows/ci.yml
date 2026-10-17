@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       # Pinned to a minor, not floating on v2.x. `deno lint` gains rules and
       # `deno fmt` changes its output across minor releases, so a floating pin
       # means a repository that is green today goes red in three months with no
@@ -21,7 +21,7 @@ jobs:
       # scheduled job in toolchain-drift.yml watches the floating version
       # instead, where a red result means "go bump the pin" rather than "your
       # change is wrong". Last verified against 2.9.6 on linux.
-      - uses: denoland/setup-deno@v2
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
         with:
           deno-version: v2.9.x
       - name: lint
